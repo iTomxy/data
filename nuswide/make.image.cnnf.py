@@ -109,6 +109,6 @@ with torch.no_grad():
         # print(_cnt, '/ 269,648')
         # break
 F = np.vstack(fea_list)
-print(F.shape)  # [190421, 4096]
+print(F.shape)  # [269648, 4096]
 with h5py.File(osp.join(NUS_P, "images.nuswide.cnnf.h5"), "w") as f:
-    f.create_dataset("images", data=F)  # 6.6G
+    f.create_dataset("images", data=F)  # 4.2G
