@@ -209,3 +209,6 @@ events.out.tfevents.*
 *.out
 
 # for this repo
+\?/
+log*/
+nuswide/fake-jpg.txt
