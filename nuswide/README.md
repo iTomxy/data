@@ -1,6 +1,6 @@
 # NUS-WIDE
 
-My original Chinese blogs can be found at [1,2].
+中文 blog 见 [1,2]。
 
 NUS-WIDE [3] is a multi-label dataset,
 containing 269,648 samples belonging to 81 categories.
