@@ -35,7 +35,7 @@ function check_non_jpg(varargin)
             fprintf("%s\n", img_file);
             fprintf(log_file, "%s\n", img_file);
             warning(''); % clear old warning message
-            n_fake += 1;
+            n_fake = n_fake + 1;
         end
 
         if mod(i, 1000) == 0

@@ -1,3 +1,4 @@
+import argparse
 import os
 import os.path as osp
 import cv2
@@ -12,13 +13,16 @@ Usage
 """
 
 
-P = "/home/dataset/nuswide"
-IMAGE_PATH = osp.join(P, "images")
-FAKE_LIST_F = "fake-jpg.txt"
+parser = argparse.ArgumentParser(description='replace fake jpeg files')
+parser.add_argument('-p', type=str, help="image path",
+    default="/home/dataset/nuswide/images")
+parser.add_argument('-f', type=str, help="txt file of fake jpeg list",
+    default="fake-jpg.txt")
+args = parser.parse_args()
 
-with open(FAKE_LIST_F, "r") as f:
+with open(args.f, "r") as f:
     for line in f:
-        img_p = osp.join(IMAGE_PATH, line.strip())
+        img_p = osp.join(args.p, line.strip())
         img = cv2.imread(img_p)#[:, :, ::-1]
         if img is None:
             with Image.open(img_p) as _img_f:
