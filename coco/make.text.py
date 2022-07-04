@@ -3,6 +3,7 @@ import codecs
 import os
 import os.path as osp
 import pprint
+import time
 from pycocotools.coco import COCO
 import gensim
 from gensim.models import Doc2Vec
@@ -60,22 +61,17 @@ def prep_text(sentences):
     #     doc.extend(s)
 
     # use Stanford CoreNLP
-    doc = []  # list of single str
-    for s in sentences:
-        s = s.strip()  # must <- maybe trailing space
-        if '.' != s[-1]:
-            s += '.'
-        with codecs.open("input.txt", "w", "utf-8") as f:
-            f.write(s)
-        os.system("java edu.stanford.nlp.pipeline.StanfordCoreNLP " \
-            "-annotators tokenize,ssplit -outputFormat conll -output.columns word " \
-            "-file input.txt > /dev/null 2>&1")
-        with codecs.open("input.txt.conll", "r", "utf-8") as f:
-            for ln in f:
-                ln = ln.strip()
-                if "" != ln:
-                    doc.append(ln.lower())
-    doc = " ".join(doc)
+    with codecs.open("input.txt", "w", "utf-8") as f:
+        for s in sentences:
+            s = s.strip()  # must <- maybe trailing space
+            if '.' != s[-1]:
+                s += '.'
+            f.write(s + '\n')
+    os.system("java edu.stanford.nlp.pipeline.StanfordCoreNLP " \
+        "-annotators tokenize,ssplit -outputFormat conll -output.columns word " \
+        "-file input.txt > /dev/null 2>&1")
+    with codecs.open("input.txt.conll", "r", "utf-8") as f:
+        doc = " ".join([ln.strip().lower() for ln in f.readlines() if ln.strip() != ""])
 
     return doc
 
@@ -103,7 +99,7 @@ for _split in SPLIT:
         # print(vec.shape)
         texts.append(vec[np.newaxis, :])
         if i % 1000 == 0:
-            print(i)
+            print(i, time.strftime("%Y-%m-%d-%H-%M", time.localtime(time.time())))
     #     break
     # break
 
