@@ -1,7 +1,7 @@
 from __future__ import print_function
 import codecs
 import itertools
-from multiprocessing import Pool
+from multiprocessing import Process, Lock, Queue
 from multiprocessing.managers import BaseManager
 import os
 import os.path as osp
@@ -71,15 +71,15 @@ def prep_text(pid, sentences):
     return doc
 
 
-def run(args):
-    pid, wrap_coco, n_process = args
-    res = []  # list of (new_id, doc2vec feature)
+def run(pid, n_process, wrap_coco, Q, lock):
     for i, (new_id, sentences) in enumerate(wrap_coco.make_iter(pid, n_process)):
         doc = prep_text(pid, sentences)
         # pprint.pprint(doc)
         vec = wrap_coco.d2v_model.infer_vector(doc)
         # print(vec.shape)
-        res.append((new_id, vec[np.newaxis, :]))
+        lock.acquire()
+        Q.put((new_id, vec[np.newaxis, :]))
+        lock.release()
         if i % 1000 == 0:
             print(pid, ':', i, ',', time.strftime(
                 "%Y-%m-%d-%H-%M", time.localtime(time.time())))
@@ -89,7 +89,7 @@ def run(args):
         if osp.exists(f):
             os.remove(f)
 
-    return res
+    print("END:", pid)
 
 
 if "__main__" == __name__:
@@ -103,6 +103,8 @@ if "__main__" == __name__:
     # pre-trained Doc2Vec model
     model = Doc2Vec.load(MODEL)
 
+    N_PROCESS = 5
+
     id_map_data = {}
     with open(osp.join(COCO_P, "id-map.COCO.txt"), "r") as f:
         for _new_id, line in enumerate(f):
@@ -112,11 +114,12 @@ if "__main__" == __name__:
     N_DATA = len(id_map_data)
     print("#data:", N_DATA)  # 123,287
 
+    Q = Queue()
+    lock = Lock()
     MyManager.register('WrapCOCO', WrapCOCO)
-    manager = MyManager()
-    manager.start()
+    my_manager = MyManager()
+    my_manager.start()
 
-    texts = []
     for _split in SPLIT:
         print("---", _split, "---")
         tic = time.time()
@@ -126,23 +129,29 @@ if "__main__" == __name__:
         coco_caps = COCO(caps_file)
         wrap_coco = WrapCOCO(coco, coco_caps, id_map_data, model)
 
-        pool = Pool(4)
-        n_process = pool._processes
-        res = pool.map_async(run, zip(
-            range(n_process), [wrap_coco] * n_process, [n_process] * n_process))
-        pool.close()
-        res = res.get()
-        print("#process:", len(res), "\n#data per process:", len(res[0]), "\ntuple len:", len(res[0][0]),
-            "\noriginal ID:", res[0][0][0], "\nd2v feature shape:", res[0][0][1].shape)
-        texts.extend(list(itertools.chain(*res)))
+        p_list = []
+        for pid in xrange(N_PROCESS):
+            p = Process(target=run, args=(pid, N_PROCESS, wrap_coco, Q, lock))
+            p.daemon = True
+            p.start()
+            p_list.append(p)
+
+        for p in p_list:
+            p.join()
 
         print(_split, ':', time.time() - tic, 's')
-        # break
 
-    manager.shutdown()
+    my_manager.shutdown()#, manager.shutdown()
+
+    results = []
+    while not Q.empty():
+        results.append(Q.get())
+    print(len(results), len(results[0]), results[0][0], results[0][1].shape)
 
     # ascending by new ID: (new id, doc2vec feature)
-    texts = sorted(texts, key=lambda t: t[0])
+    texts = sorted(results, key=lambda t: t[0])
+    for i in range(100):#N_DATA):
+        assert texts[i][0] == i, "* order error"
     texts = [t[1] for t in texts]
     texts = np.vstack(texts).astype(np.float32)
     assert texts.shape[0] == N_DATA
