@@ -212,5 +212,5 @@ events.out.tfevents.*
 \?/
 log*/
 fake-jpg.txt
-coco/input.txt
-*.txt.conll
+coco/input*.txt
+coco/*.txt.conll

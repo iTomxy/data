@@ -28,9 +28,6 @@ ANNO_P = osp.join(COCO_P, "annotations")
 SPLIT = ["val", "train"]
 # doc2vec
 MODEL = "/home/dataset/Doc2Vec/enwiki_dbow/doc2vec.bin"
-start_alpha = 0.01
-infer_epoch = 1000
-DIM = 300  # dimension of the doc2vec feature
 
 
 id_map_data = {}
@@ -111,4 +108,4 @@ if osp.exists("input.txt.conll"):
 
 texts = np.vstack(texts).astype(np.float32)
 print("texts:", texts.shape, texts.dtype)  # (123287, 300) dtype('<f4')
-sio.savemat(osp.joni(COCO_P, "texts.COCO.d2v.{}.mat".format(DIM)), {"texts": texts})
+sio.savemat(osp.join(COCO_P, "texts.COCO.d2v-{}d.mat".format(texts.shape[1])), {"texts": texts})
