@@ -1,7 +1,7 @@
 from __future__ import print_function
 import codecs
 import itertools
-from multiprocessing import Process, Lock, Queue
+from multiprocessing import Lock, Manager, Pool, Process, Queue, Value
 from multiprocessing.managers import BaseManager
 import os
 import os.path as osp
@@ -14,27 +14,41 @@ import numpy as np
 import scipy.io as sio
 
 
-"""MultiProcessing version of make.text.py"""
+"""MultiProcessing version of make.text.py
+References:
+- https://docs.python.org/2.7/library/multiprocessing.html
+- https://zhuanlan.zhihu.com/p/166091204
+- https://www.journaldev.com/15631/python-multiprocessing-example
+"""
 
 
 class WrapCOCO:
-    def __init__(self, coco, coco_caps, id_map_data, d2v_model):
-        self.coco = coco
-        self.coco_caps = coco_caps
-        self.id_list = coco.getImgIds()
-        self.n_data = len(self.id_list)
-        self.id_map_data = id_map_data
+    # def __init__(self, coco, coco_caps, id_map_data, d2v_model):
+    def __init__(self, d2v_model):
+        # self.coco = coco
+        # self.coco_caps = coco_caps
+        # self.id_list = coco.getImgIds()
+        # self.n_data = len(self.id_list)
+        # self.id_map_data = id_map_data
         self.d2v_model = d2v_model
 
-    def make_iter(self, pid, n_process):
-        batch_size = (self.n_data + n_process - 1) // n_process
-        for meta_idx in range(pid * batch_size, min((pid + 1) * batch_size, self.n_data)):
-            _old_id = self.id_list[meta_idx]
-            _new_id = self.id_map_data[_old_id]
-            _annIds = coco_caps.getAnnIds(imgIds=_old_id)
-            _anns = coco_caps.loadAnns(_annIds)
-            sentences = [_a["caption"] for _a in _anns]
-            yield _new_id, sentences
+    # def __getitem__(self, old_id):
+    #     assert isinstance(old_id, int)
+    #     new_id = self.id_map_data[old_id]
+    #     _annIds = self.coco_caps.getAnnIds(imgIds=old_id)
+    #     _anns = self.coco_caps.loadAnns(_annIds)
+    #     sentences = [_a["caption"] for _a in _anns]
+    #     return new_id, sentences
+
+    # def make_iter(self, pid, n_process):
+    #     batch_size = (self.n_data + n_process - 1) // n_process
+    #     for meta_idx in range(pid * batch_size, min((pid + 1) * batch_size, self.n_data)):
+    #         _old_id = self.id_list[meta_idx]
+    #         _new_id = self.id_map_data[_old_id]
+    #         _annIds = self.coco_caps.getAnnIds(imgIds=_old_id)
+    #         _anns = self.coco_caps.loadAnns(_annIds)
+    #         sentences = [_a["caption"] for _a in _anns]
+    #         yield _new_id, sentences
 
 
 class MyManager(BaseManager):
@@ -71,18 +85,37 @@ def prep_text(pid, sentences):
     return doc
 
 
-def run(pid, n_process, wrap_coco, Q, lock):
-    for i, (new_id, sentences) in enumerate(wrap_coco.make_iter(pid, n_process)):
+def run(pid, name_space, q_data, q_results, lock_data, lock_results):
+    # print(pid, ':', id(name_space), id(name_space.d2v_model),
+    #     id(q_data), id(q_results), id(lock_data), id(lock_results))
+    while not q_data.empty() or 1 != name_space.flag_data_fin:
+        lock_data.acquire()
+        if q_data.empty():
+            flag_empty = True
+            if 1 == name_space.flag_data_fin:
+                lock_data.release()
+                break
+            time.sleep(7)
+        else:
+            flag_empty = False
+            new_id, sentences = q_data.get()
+            # print("<- get data:", new_id)
+        lock_data.release()
+
+        if flag_empty:
+            continue
+
         doc = prep_text(pid, sentences)
         # pprint.pprint(doc)
-        vec = wrap_coco.d2v_model.infer_vector(doc)
+        vec = name_space.d2v_model.infer_vector(doc)
         # print(vec.shape)
-        lock.acquire()
-        Q.put((new_id, vec[np.newaxis, :]))
-        lock.release()
-        if i % 1000 == 0:
-            print(pid, ':', i, ',', time.strftime(
-                "%Y-%m-%d-%H-%M", time.localtime(time.time())))
+        lock_results.acquire()
+        q_results.put((new_id, vec[np.newaxis, :]))
+        # print("-> put result:", new_id)
+        name_space.processed_data += 1
+        if name_space.processed_data % 1000 == 0:
+            print(name_space.processed_data, ',', time.strftime("%Y-%m-%d-%H-%M", time.localtime(time.time())))
+        lock_results.release()
 
     # remove the intermedia output files (when using Stanford CoreNLP)
     for f in ["input.{}.txt".format(pid), "input.{}.txt.conll".format(pid)]:
@@ -103,8 +136,6 @@ if "__main__" == __name__:
     # pre-trained Doc2Vec model
     model = Doc2Vec.load(MODEL)
 
-    N_PROCESS = 5
-
     id_map_data = {}
     with open(osp.join(COCO_P, "id-map.COCO.txt"), "r") as f:
         for _new_id, line in enumerate(f):
@@ -114,46 +145,60 @@ if "__main__" == __name__:
     N_DATA = len(id_map_data)
     print("#data:", N_DATA)  # 123,287
 
-    Q = Queue()
-    lock = Lock()
-    MyManager.register('WrapCOCO', WrapCOCO)
-    my_manager = MyManager()
-    my_manager.start()
+    N_PROCESS = 4
+    lock_data, lock_results = Lock(), Lock()
+    # flag_data_fin = Value('H', 0)  # `H` for unsigned int
+    q_data = Queue()  # (new_id, sentences)
+    q_results = Queue()  # (new_id, doc2vec fecture)
+    # MyManager.register('WrapCOCO', WrapCOCO)
+    manager = Manager()
+    name_space = manager.Namespace()
+    name_space.d2v_model = model
+    name_space.flag_data_fin = 0
+    name_space.processed_data = 0
+
+    p_list = []
+    for pid in xrange(N_PROCESS):
+        p = Process(target=run, args=(pid, name_space,
+            q_data, q_results, lock_data, lock_results))
+        p_list.append(p)
+        p.start()
 
     for _split in SPLIT:
         print("---", _split, "---")
-        tic = time.time()
         anno_file = osp.join(ANNO_P, "instances_{}2017.json".format(_split))
         caps_file = osp.join(ANNO_P, "captions_{}2017.json".format(_split))
         coco = COCO(anno_file)
         coco_caps = COCO(caps_file)
-        wrap_coco = WrapCOCO(coco, coco_caps, id_map_data, model)
+        for i, old_id in enumerate(coco.getImgIds()):
+            new_id = id_map_data[old_id]
+            _annIds = coco_caps.getAnnIds(imgIds=old_id)
+            _anns = coco_caps.loadAnns(_annIds)
+            sentences = [_a["caption"] for _a in _anns]
+            lock_data.acquire()
+            q_data.put((new_id, sentences))
+            # print("put data:", new_id)
+            lock_data.release()
 
-        p_list = []
-        for pid in xrange(N_PROCESS):
-            p = Process(target=run, args=(pid, N_PROCESS, wrap_coco, Q, lock))
-            p.daemon = True
-            p.start()
-            p_list.append(p)
+    name_space.flag_data_fin = 1
+    for pid, p in enumerate(p_list):
+        # print("join:", pid)
+        p.join()
 
-        for p in p_list:
-            p.join()
-
-        print(_split, ':', time.time() - tic, 's')
-
-    my_manager.shutdown()#, manager.shutdown()
+    manager.shutdown()
 
     results = []
-    while not Q.empty():
-        results.append(Q.get())
-    print(len(results), len(results[0]), results[0][0], results[0][1].shape)
+    while not q_results.empty():
+        results.append(q_results.get())
+    print(len(results))
+    print(len(results[0]), results[0][0], results[0][1].shape)
 
     # ascending by new ID: (new id, doc2vec feature)
     texts = sorted(results, key=lambda t: t[0])
-    for i in range(100):#N_DATA):
-        assert texts[i][0] == i, "* order error"
+    # for i in range(100):#N_DATA):
+    #     assert texts[i][0] == i, "* order error"
     texts = [t[1] for t in texts]
     texts = np.vstack(texts).astype(np.float32)
-    assert texts.shape[0] == N_DATA
+    # assert texts.shape[0] == N_DATA
     print("texts:", texts.shape, texts.dtype)  # (123287, 300) dtype('<f4')
     sio.savemat(osp.join(COCO_P, "texts.COCO.d2v-{}d.mat".format(texts.shape[1])), {"texts": texts})
