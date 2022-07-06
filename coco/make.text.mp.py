@@ -126,6 +126,10 @@ def run(pid, name_space, q_data, q_results, lock_data, lock_results):
 
 
 if "__main__" == __name__:
+    raise Exception("""(2022.7.6)
+        This implementation is really slow.
+        Please use `make.text.mt.py` instead.""")
+
     # COCO
     COCO_P = "/home/dataset/COCO"
     ANNO_P = osp.join(COCO_P, "annotations")
