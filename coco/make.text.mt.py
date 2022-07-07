@@ -62,6 +62,7 @@ def prep_text(tid, sentences):
         "-file input.{}.txt > /dev/null 2>&1".format(tid))
     with codecs.open("input.{}.txt.conll".format(tid), "r", "utf-8") as f:
         doc = " ".join([ln.strip().lower() for ln in f.readlines() if ln.strip() != ""])
+    doc = doc.split()
 
     return doc
 
@@ -80,11 +81,11 @@ def run(tid, id_list):
         meta_idx = meta_index
         meta_index += 1
         mutex_mid.release()
-        if meta_index > n:  # NOT greater-equal
+        if meta_idx >= n:
             break
 
-        old_id = id_list[meta_idx]
-        new_id = id_map_data[old_id]
+        _old_id = id_list[meta_idx]
+        _new_id = id_map_data[_old_id]
         _annIds = coco_caps.getAnnIds(imgIds=_old_id)
         _anns = coco_caps.loadAnns(_annIds)
         # print(len(anns))
@@ -93,10 +94,11 @@ def run(tid, id_list):
         # pprint.pprint(sentences)
         doc = prep_text(tid, sentences)
         # pprint.pprint(doc)
+        model.random.seed(0)  # to keep it consistent
         vec = model.infer_vector(doc)
         # print(vec.shape)
         mutex_res.acquire()
-        results.append((new_id, vec[np.newaxis, :]))
+        results.append((_new_id, vec[np.newaxis, :]))
         mutex_res.release()
         if meta_idx % 1000 == 0:
             print(meta_idx, ',', time.strftime("%Y-%m-%d-%H-%M", time.localtime(time.time())))
@@ -131,7 +133,6 @@ for _split in SPLIT:
 
 assert len(results) == N_DATA
 texts = sorted(results, key=lambda t: t[0])  # ascending by new ID
-print([t[0] for t in texts])
 for i in xrange(100):#N_DATA):
     assert texts[i][0] == i, "* order error"
 texts = [t[1] for t in texts]

@@ -11,16 +11,8 @@ import numpy as np
 import scipy.io as sio
 
 
-"""process texts
-python 2 needed by `jhlau/doc2vec`, and COCO api CAN work with python 2.7.
-So I choose to create a virtual env of python 2.7.
-Dependencies:
-    matplotlib (COCO api)
-    smart_open (gensim)
-Docker:
-    iTomxy/ml-template/docker-files/pt1.4-d2v.df
-References:
-    - https://blog.csdn.net/leitouguan8655/article/details/80533293
+"""Compare the one processed by `make.text.mt.py` and `make.text.py`
+Use the same environment as `make.text.py`.
 """
 
 
@@ -75,7 +67,9 @@ def prep_text(sentences):
     return doc
 
 
-texts = []
+texts_mt = sio.loadmat(osp.join(COCO_P, "texts.COCO.d2v-300d.mat"))["texts"]
+print(texts_mt.shape)
+
 for _split in SPLIT:
     print("---", _split, "---")
     anno_file = osp.join(ANNO_P, "instances_{}2017.json".format(_split))
@@ -84,8 +78,9 @@ for _split in SPLIT:
     coco_caps = COCO(caps_file)
 
     id_list = coco.getImgIds()
-    for i, _old_id in enumerate(id_list):
+    for _old_id in np.random.choice(id_list, 2, replace=False):
         _new_id = id_map_data[_old_id]
+        print(_new_id, id_map_data[_old_id])
         _annIds = coco_caps.getAnnIds(imgIds=_old_id)
         _anns = coco_caps.loadAnns(_annIds)
         # print(len(anns))
@@ -94,21 +89,15 @@ for _split in SPLIT:
         # pprint.pprint(sentences)
         doc = prep_text(sentences)
         # pprint.pprint(doc)
-        model.random.seed(0)  # to keep it consistent
+        model.random.seed(0)
         vec = model.infer_vector(doc)
-        # print(vec.shape)
-        texts.append(vec[np.newaxis, :])
-        if i % 1000 == 0:
-            print(i, time.strftime("%Y-%m-%d-%H-%M", time.localtime(time.time())))
+        # print(vec.shape, vec.dtype)
+
+        assert (vec != texts_mt[_new_id]).sum() == 0, "{}, {}".format(_new_id, _old_id)
     #     break
     # break
+print("DONE")
 
-# remove the intermedia output files (when using Stanford CoreNLP)
-if osp.exists("input.txt"):
-    os.remove("input.txt")
-if osp.exists("input.txt.conll"):
-    os.remove("input.txt.conll")
-
-texts = np.vstack(texts).astype(np.float32)
-print("texts:", texts.shape, texts.dtype)  # (123287, 300) dtype('<f4')
-sio.savemat(osp.join(COCO_P, "texts.COCO.d2v-{}d.mat".format(texts.shape[1])), {"texts": texts})
+for f in ["input.txt", "input.txt.conll"]:
+    if osp.exists(f):
+        os.remove(f)

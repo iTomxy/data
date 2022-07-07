@@ -81,6 +81,7 @@ def prep_text(pid, sentences):
         "-file input.{}.txt > /dev/null 2>&1".format(pid))
     with codecs.open("input.{}.txt.conll".format(pid), "r", "utf-8") as f:
         doc = " ".join([ln.strip().lower() for ln in f.readlines() if ln.strip() != ""])
+    doc = doc.split()
 
     return doc
 
@@ -107,6 +108,7 @@ def run(pid, name_space, q_data, q_results, lock_data, lock_results):
 
         doc = prep_text(pid, sentences)
         # pprint.pprint(doc)
+        name_space.d2v_model.random.seed(0)  # to keep it consistent
         vec = name_space.d2v_model.infer_vector(doc)
         # print(vec.shape)
         lock_results.acquire()
