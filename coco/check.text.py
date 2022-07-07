@@ -23,6 +23,9 @@ SPLIT = ["val", "train"]
 # doc2vec
 MODEL = "/home/dataset/Doc2Vec/enwiki_dbow/doc2vec.bin"
 
+# number of sample to consistency check in each split
+N_SAMPLE = 1739
+
 
 id_map_data = {}
 with open(osp.join(COCO_P, "id-map.COCO.txt"), "r") as f:
@@ -78,9 +81,8 @@ for _split in SPLIT:
     coco_caps = COCO(caps_file)
 
     id_list = coco.getImgIds()
-    for _old_id in np.random.choice(id_list, 2, replace=False):
+    for _old_id in np.random.choice(id_list, N_SAMPLE, replace=False):
         _new_id = id_map_data[_old_id]
-        print(_new_id, id_map_data[_old_id])
         _annIds = coco_caps.getAnnIds(imgIds=_old_id)
         _anns = coco_caps.loadAnns(_annIds)
         # print(len(anns))

@@ -71,6 +71,7 @@ def prep_text(tid, sentences):
 N_THREAD = max(4, multiprocessing.cpu_count() - 2)
 results, mutex_res = [], threading.Lock()
 meta_index, mutex_mid = 0, threading.Lock()
+mutex_d2v = threading.Lock()
 
 
 def run(tid, id_list):
@@ -94,8 +95,10 @@ def run(tid, id_list):
         # pprint.pprint(sentences)
         doc = prep_text(tid, sentences)
         # pprint.pprint(doc)
+        mutex_d2v.acquire()
         model.random.seed(0)  # to keep it consistent
         vec = model.infer_vector(doc)
+        mutex_d2v.release()
         # print(vec.shape)
         mutex_res.acquire()
         results.append((_new_id, vec[np.newaxis, :]))
