@@ -36,8 +36,7 @@ print("both filter out the data with empty labels")
 non_zero_zq = (rs_zq > 0)
 L_zq_nz = L_zq[non_zero_zq]
 print("#ZQ's non-zero:", L_zq_nz.shape)  # (122218, 80)
-clean_id = sio.loadmat(osp.join(MY_P, "clean_id.COCO.mat"))["clean_id"]
-L_my = L_my[clean_id]
+clean_id = sio.loadmat(osp.join(MY_P, "clean_id.COCO.mat"))["clean_id"][0]
 L_my_nz = L_my[clean_id]
 print("#my non-zero:", L_my_nz.shape)  # (122218, 80)
 
