@@ -108,7 +108,7 @@ def run(pid, name_space, q_data, q_results, lock_data, lock_results):
 
         doc = prep_text(pid, sentences)
         # pprint.pprint(doc)
-        name_space.d2v_model.random.seed(0)  # to keep it consistent
+        name_space.d2v_model.random.seed(name_space.d2v_seed)  # to keep it consistent
         vec = name_space.d2v_model.infer_vector(doc)
         # print(vec.shape)
         lock_results.acquire()
@@ -139,6 +139,7 @@ if "__main__" == __name__:
 
     # doc2vec
     MODEL = "/home/dataset/Doc2Vec/enwiki_dbow/doc2vec.bin"
+    D2V_SEED = 0  # keep consistency
     # pre-trained Doc2Vec model
     model = Doc2Vec.load(MODEL)
 
@@ -162,6 +163,7 @@ if "__main__" == __name__:
     name_space.d2v_model = model
     name_space.flag_data_fin = 0
     name_space.processed_data = 0
+    name_space.d2v_seed = D2V_SEED
 
     p_list = []
     for pid in xrange(N_PROCESS):

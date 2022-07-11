@@ -22,6 +22,7 @@ ANNO_P = osp.join(COCO_P, "annotations")
 SPLIT = ["val", "train"]
 # doc2vec
 MODEL = "/home/dataset/Doc2Vec/enwiki_dbow/doc2vec.bin"
+D2V_SEED = 0  # keep consistency
 
 
 id_map_data = {}
@@ -96,7 +97,7 @@ def run(tid, id_list):
         doc = prep_text(tid, sentences)
         # pprint.pprint(doc)
         mutex_d2v.acquire()
-        model.random.seed(0)  # to keep it consistent
+        model.random.seed(D2V_SEED)  # to keep it consistent
         vec = model.infer_vector(doc)
         mutex_d2v.release()
         # print(vec.shape)
