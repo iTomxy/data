@@ -22,7 +22,10 @@ args = parser.parse_args()
 
 with open(args.f, "r") as f:
     for line in f:
-        img_p = osp.join(args.p, line.strip())
+        line = line.strip()
+        if "" == line:
+            continue
+        img_p = osp.join(args.p, line)
         img = cv2.imread(img_p)#[:, :, ::-1]
         if img is None:
             with Image.open(img_p) as _img_f:
@@ -38,3 +41,10 @@ with open(args.f, "r") as f:
         img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         cv2.imwrite(img_p, img_bgr)
 print("DONE")
+
+"""fake list
+--- NUS-WIDE
+
+--- COCO
+67847.jpg
+"""
