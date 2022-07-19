@@ -7,8 +7,8 @@
 % - https://ch.mathworks.com/matlabcentral/answers/364719-detect-warning-and-take-action
 function check_non_jpg(varargin)
     args = inputParser;
-    addOptional(args, 'image_path', "/home/dataset/nuswide/images");
-    addOptional(args, 'matconvnet_path', "/home/tom/Download/matconvnet-1.0-beta25");
+    addOptional(args, 'image_path', "/home/dataset/nuswide/Flickr");
+    addOptional(args, 'matconvnet_path', "/usr/local/matconvnet-1.0-beta25");
     addOptional(args, 'o', "fake-jpg.txt");
     parse(args, varargin{:});
 
@@ -17,32 +17,8 @@ function check_non_jpg(varargin)
     cd(this_path);
     warning(''); % clear old warning message
 
-    file_list = dir(fullfile(args.Results.image_path, "*.jpg"));
-    fprintf("#images: %d\n", length(file_list));
-    n_fake = 0;  % count fake jpeg files
     log_file = fopen(args.Results.o, "w");
-    for i = 1 : length(file_list)
-        img_file = file_list(i).name;
-        % sid = split(img_file, ".jpg");
-        % sid = str2num(sid{1});
-
-        % tentative loading
-        img = vl_imreadjpeg({char(fullfile(args.Results.image_path, img_file))});
-        % if that's a fake jpeg file, a warning will be raised & catched below
-        [warnMsg, warnId] = lastwarn;
-        if ~isempty(warnMsg)
-            % format: <image ID>.jpg
-            fprintf("%s\n", img_file);
-            fprintf(log_file, "%s\n", img_file);
-            warning(''); % clear old warning message
-            n_fake = n_fake + 1;
-        end
-
-        if mod(i, 1000) == 0
-            fprintf("%d\n", i);
-        end
-        % break
-    end
+    [n_fake, n_file] = dfs(args.Results.image_path, log_file, 0);
     if 0 == n_fake
         fprintf(log_file, "NO FAKE JPEG FOUND\n");
     end
@@ -51,4 +27,40 @@ function check_non_jpg(varargin)
     %     fprintf("NO fake jpeg, deleting the output file: %s\n", args.Results.o);
     %     system(sprintf("rm %s", args.Results.o));
     % end
-end % test_non_jpg
+    exit
+end % check_non_jpg
+
+
+function [n_fake, file_cnt] = dfs(image_path, log_file, file_cnt)
+    n_fake = 0;
+    file_list = dir(image_path);
+    for i = 1 : length(file_list)
+        file_name = file_list(i).name;
+        file_name_f = fullfile(image_path, file_name);
+        if isfolder(file_name_f)
+            if strcmp(file_name, ".") == 0 && strcmp(file_name, "..") == 0
+                % fprintf("folder: %s\n", file_name_f);
+                [fake_cnt, file_cnt] = dfs(file_name_f, log_file, file_cnt);
+                n_fake = n_fake + fake_cnt;
+            end
+        elseif contains(file_name, ".jpg") || contains(file_name, ".jpeg")
+            % fprintf("image file: %s\n", file_name_f);
+
+            % tentative loading
+            img = vl_imreadjpeg({char(file_name_f)});
+            % if that's a fake jpeg file, a warning will be raised & catched below
+            [warnMsg, warnId] = lastwarn;
+            if ~isempty(warnMsg)
+                fprintf("%s\n", file_name_f);
+                fprintf(log_file, "%s\n", file_name_f);
+                warning(''); % clear old warning message
+                n_fake = n_fake + 1;
+            end
+
+            file_cnt = file_cnt + 1;
+            if mod(file_cnt, 1000) == 0
+                fprintf("%d\n", file_cnt);
+            end
+        end % if dir
+    end % for file_list
+end % dfs
