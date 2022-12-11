@@ -39,7 +39,7 @@ else:
 print("soft-linking:", IMAGE_SRC_ABS, "->", IMAGE_DEST)
 with open(IMAGE_LIST, "r") as f:
     for sid, line in enumerate(f):
-        line = cvt_sep(line).strip()
+        line = cvt_sep(line).strip().replace("C:/ImageData/Flickr/", "")
         # img_p = osp.join(IMAGE_SRC_ABS, line)  # use this in Windows
         # img_p = osp.join(IMAGE_SRC_REL, line)  # use this in linux
         img_p = osp.join(img_src_path_pre, line)
