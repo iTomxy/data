@@ -28,14 +28,13 @@ with open(osp.join(COCO_P, "id-map.COCO.txt"), "w") as f, \
         open(osp.join(COCO_P, "id-map.COCO.train.txt"), "w") as f_train, \
         open(osp.join(COCO_P, "id-map.COCO.val.txt"), "w") as f_val:
     # format: <original id> <image file name>
-    for f_name in file_list:
+    for dsc_id, f_name in enumerate(file_list):
         _original_id = id_key(f_name)
-        _text = "{} {}\n".format(_original_id, f_name)
-        f.write(_text)
+        f.write("{} {}\n".format(_original_id, f_name))
         if f_name in file_list_val:
-            f_val.write(_text)
+            f_val.write("{} {} {}\n".format(dsc_id, _original_id, f_name))
         else:
             assert f_name in file_list_train, "* Wild file name: " + f_name
-            f_train.write(_text)
+            f_train.write("{} {} {}\n".format(dsc_id, _original_id, f_name))
         # if i > 5: break
 print("DONE")
