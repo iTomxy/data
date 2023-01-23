@@ -27,7 +27,7 @@ file_list = sorted(file_list, key=id_key)  # ascending of image ID
 with open(osp.join(COCO_P, "id-map.COCO.txt"), "w") as f:
     # format: <original id> <image file name> <original subset>
     for dsc_id, (f_name, subset) in enumerate(file_list):
-        _original_id = id_key(f_name)
+        _original_id = int(osp.splitext(f_name)[0])
         f.write("{} {} {}\n".format(_original_id, f_name, subset))
-        # if i > 5: break
+        # if dsc_id > 5: break
 print("DONE")
