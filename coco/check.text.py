@@ -30,7 +30,7 @@ N_SAMPLE = 1739
 id_map_data = {}
 with open(osp.join(COCO_P, "id-map.COCO.txt"), "r") as f:
     for _new_id, line in enumerate(f):
-        _old_id, _ = line.strip().split()
+        _old_id, *_ = line.strip().split()
         id_map_data[int(_old_id)] = _new_id
 N_DATA = len(id_map_data)
 print("#data:", N_DATA)  # 123,287
