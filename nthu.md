@@ -10,7 +10,7 @@ road, sidewalk, building, trafﬁc light, trafﬁc sign,
 vegetation, sky, person, rider, car,
 bus, motorcycle, bicycle
 ```
-all of which are included in the [Cityscapes](../cityscapes/README.md) class set.
+all of which are included in the [Cityscapes](cityscapes.md) class set.
 
 # References
 

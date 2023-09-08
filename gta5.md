@@ -1,6 +1,6 @@
 GTA5 [1] is a synthetic image dataset created from the video game [Grand Theft Auto V](https://www.rockstargames.com/gta-v).
 It contains `24,966` images with class level pixel annotations.
-The class labels are compatible with the [CamVid](../camvid/README.md) and [CityScapes](../cityscapes/README.md) datasets.
+The class labels are compatible with the [CamVid](camvid.md) and [CityScapes](cityscapes.md) datasets.
 
 # References
 

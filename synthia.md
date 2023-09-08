@@ -35,7 +35,7 @@ This subset provides instance level annotations of `23` classes:
     traffic light, terrain, rider, truck, bus,
     train, wall, lanemarking
     ```
-    This class set is compatible with the [Cityscapes](../cityscapes/README.md) test set.
+    This class set is compatible with the [Cityscapes](cityscapes.md) test set.
 
 - **SYNTHIA-Seqs** / **SYNTHIA Video Sequences**.
 Introduced in [1],
