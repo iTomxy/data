@@ -68,6 +68,10 @@ Abdomen.zip
 [1] only use part of it.
 The ID of the chosen data can be found in the mapping-back label files in [1/github].
 
+## dataset 3 Colon
+
+Can also be downloaded from the [Medical Segmentation Decathlon](../msd.md) [project page](http://medicaldecathlon.com/dataaws/).
+
 # References
 
 1. (IJCARS 2021) Deep learning to segment pelvic bones: large-scale CT datasets and baseline models - [paper](https://link.springer.com/article/10.1007/s11548-021-02363-8), [github](https://github.com/MIRACLE-Center/CTPelvic1K), [paper with code](https://paperswithcode.com/dataset/ctpelvic1k)
