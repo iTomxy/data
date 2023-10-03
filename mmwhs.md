@@ -3,6 +3,9 @@ because the latter is not accessible (on Sept. 21, 2023).
 
 There are also preprecessed tfrecord-format data originally provided at [2].
 Both [3,4] use it.
+[3,4] provides codes for converting nii.gz data to npz format.
+[5] converted the tfrecord-format data into npy-format (not npz),
+and provides downloading link.
 
 # References
 
@@ -10,3 +13,4 @@ Both [3,4] use it.
 2. [carrenD/Medical-Cross-Modality-Domain-Adaptation](https://github.com/carrenD/Medical-Cross-Modality-Domain-Adaptation)
 3. [cchen-cc/SIFA](https://github.com/cchen-cc/SIFA/tree/SIFA-v1) (AAAI'19, v1 branch), [cchen-cc/SIFA](https://github.com/cchen-cc/SIFA/tree/SIFA) (TMI'20)
 4. [Sunxy11/ADR](https://github.com/Sunxy11/ADR)
+5. [TFboys-lzz/MPSCL](https://github.com/tfboys-lzz/mpscl)
