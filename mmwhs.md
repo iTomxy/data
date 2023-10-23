@@ -9,6 +9,7 @@ Both [3,4] use it.
 [5] converted the tfrecord-format data into npy-format,
 and provides downloading link.
 [6] prodices codes for converting tfrecord-format data to npy-format.
+[8] provides preprocessing code (process from raw nii.gz files).
 
 # References
 
@@ -19,3 +20,4 @@ and provides downloading link.
 5. [TFboys-lzz/MPSCL](https://github.com/tfboys-lzz/mpscl)
 6. [devavratTomar/sasan](https://github.com/devavratTomar/sasan)
 7. [MMWHS数据集](https://blog.csdn.net/HackerTom/article/details/133952123)
+8. (NIPS 2023) Towards Generic Semi-Supervised Framework for Volumetric Medical Image Segmentation - [code](https://github.com/xmed-lab/GenericSSL)
