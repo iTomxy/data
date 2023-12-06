@@ -10,6 +10,8 @@ To really start downloading,
 one should install the Synapse API following [3],
 and then download using the API.
 
+MSD-T10 (sub-dataset 3) can also be downloaded from the [Medical Segmentation Decathlon](../msd.md) [project page](http://medicaldecathlon.com/dataaws/).
+
 There are 5 classes in the annoataion:
 ```json
 {
@@ -22,55 +24,7 @@ There are 5 classes in the annoataion:
 ```
 See [MIRACLE-Center/CTPelvic1K/nnunet/dataset_conversion/JstPelvisSegmentation_5label.py](https://github.com/MIRACLE-Center/CTPelvic1K/blob/main/nnunet/dataset_conversion/JstPelvisSegmentation_5label.py#L108) within [1/github] for reference.
 
-# Sub-datasets
-
-## dataset 1 Abdomen
-
-Files in the download website:
-
-- Abdomen.zip
-- RawData.zip
-- Reg-Training-Testing.zip
-- Reg-Training-Training.zip
-
-Note that the content in the last 3 zip files are ALL included in the 1st one,
-i.e. *Abdomen.zip*.
-So only download the 1st one is enough.
-
-```
-Abdomen.zip
-|- RawData/
-|  |- Testing/img/
-|  |  |- img<ID>.nii.gz
-|  `- Training/
-|     |- img/
-|     |  |- img<ID>.nii.gz
-|     `- label/
-|        |- label<ID>.nii.gz
-`- RegData/
-   |- Training-Testing/
-   |  |- img/
-   |  |  |- <testID>/
-   |  |  |  |- img<trainID>-<testID>.nii.gz
-   |  `- label/
-   |     |- <testID>/
-   |     |  |- label<trainID>-<testID>.nii.gz
-   |- Training-Training/
-   |  |- img/
-   |  |  |- <trainID_1>/
-   |  |  |  |- img<trainID_2>-<trainID_1>.nii.gz
-   |  `- label/
-   |     |- <trainID_1>/
-   |     |  |- img<trainID_2>-<trainID_1>.nii.gz
-   `- Training-Training/
-```
-
-[1] only use part of it.
-The ID of the chosen data can be found in the mapping-back label files in [1/github].
-
-## dataset 3 Colon
-
-Can also be downloaded from the [Medical Segmentation Decathlon](../msd.md) [project page](http://medicaldecathlon.com/dataaws/).
+See [*test-data-subsets.ipynb*](./test-data-subsets.ipynb) for initial exploration of those subsets and annotations.
 
 # References
 
