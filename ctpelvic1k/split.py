@@ -7,7 +7,7 @@ Split each sub-dataset respectively.
 """
 
 P = osp.expanduser("~/data/ctpelvic1k")
-VOLUME_P = osp.join(P, "processed-ctpelvic1k", "npy")
+VOLUME_P = osp.join(P, "processed-ctpelvic1k")
 
 TRAIN_RATIO = 0.6
 TEST_RATIO = 0.2
@@ -17,11 +17,12 @@ record = {
     "time": "UTC " + time.asctime(time.gmtime()),
     "train_ratio": TRAIN_RATIO,
     "test_ratio": TEST_RATIO,
-    "validation_ratio": VAL_RATIO
+    "validation_ratio": VAL_RATIO,
+    "splitting": {}
 }
 for sub_id in range(1, 8):
     print(sub_id, end='\r')
-    vol_list = glob.glob(osp.join(VOLUME_P, f"d{sub_id}_*_image.npy"))
+    vol_list = glob.glob(osp.join(VOLUME_P, f"d{sub_id}_*_image.nii.gz"))
     n = len(vol_list)
     if 0 == n:
         # record[f"d{sub_id}"] = 0 # (2023.12.6) d2 not downloaded
@@ -35,7 +36,7 @@ for sub_id in range(1, 8):
     vol_list = [osp.basename(f) for f in vol_list]
     vol_list = [f[: f.rfind('_')] for f in vol_list]
 
-    record[f"d{sub_id}"] = {
+    record["splitting"][f"d{sub_id}"] = {
         "train": vol_list[:n_train],
         "test": vol_list[n_train: n_train + n_test],
         "validation": vol_list[n_train + n_test:]
