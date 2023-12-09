@@ -51,18 +51,18 @@ def getRangeImageDepth(label):
 
 P = osp.expanduser("~/data/ctpelvic1k")
 SAVE_P = osp.join(P, "processed-ctpelvic1k")
-SAVE_NII_P = osp.join(SAVE_P, "nii")
-SAVE_NPY_P = osp.join(SAVE_P, "npy")
+SAVE_NII_P = SAVE_P # osp.join(SAVE_P, "nii")
+# SAVE_NPY_P = osp.join(SAVE_P, "npy")
 os.makedirs(SAVE_NII_P, exist_ok=True)
-os.makedirs(SAVE_NPY_P, exist_ok=True)
+# os.makedirs(SAVE_NPY_P, exist_ok=True)
 
 
 def proc_volume(image_path, label_path, save_fid):
     """process & save 1 volume"""
     if  osp.isfile(os.path.join(SAVE_NII_P, f"{save_fid}_image.nii.gz")) and \
-        osp.isfile(os.path.join(SAVE_NII_P, f"{save_fid}_label.nii.gz")) and \
-        osp.isfile(os.path.join(SAVE_NPY_P, f"{save_fid}_image.npy")) and \
-        osp.isfile(os.path.join(SAVE_NPY_P, f"{save_fid}_label.npy")):
+        osp.isfile(os.path.join(SAVE_NII_P, f"{save_fid}_label.nii.gz")): #and \
+        # osp.isfile(os.path.join(SAVE_NPY_P, f"{save_fid}_image.npy")) and \
+        # osp.isfile(os.path.join(SAVE_NPY_P, f"{save_fid}_label.npy")):
         return
 
     image_arr = read_reorient2RAI(image_path)
@@ -93,15 +93,15 @@ def proc_volume(image_path, label_path, save_fid):
     # image_arr = zoom(image_arr, [144/dn, 144/hn, 144/wn], order=0)
     # label_arr = zoom(label_arr, [144/dn, 144/hn, 144/wn], order=0)
 
-    image = sitk.GetImageFromArray(image_arr)
-    label = sitk.GetImageFromArray(label_arr)
+    # save .npy
+    # np.save(os.path.join(SAVE_NPY_P, f"{save_fid}_image.npy"), image_arr)
+    # np.save(os.path.join(SAVE_NPY_P, f"{save_fid}_label.npy"), label_arr)
 
     # save .nii.gz
+    image = sitk.GetImageFromArray(image_arr)
+    label = sitk.GetImageFromArray(label_arr)
     sitk.WriteImage(image, os.path.join(SAVE_NII_P, f"{save_fid}_image.nii.gz"))
     sitk.WriteImage(label, os.path.join(SAVE_NII_P, f"{save_fid}_label.nii.gz"))
-    # save .npy
-    np.save(os.path.join(SAVE_NPY_P, f"{save_fid}_image.npy"), image_arr)
-    np.save(os.path.join(SAVE_NPY_P, f"{save_fid}_label.npy"), label_arr)
 
 
 err_log = defaultdict(list)
@@ -190,6 +190,7 @@ for f in os.listdir(data_p):
     if osp.isfile(lab_f):
         print(f, end='\r')
         try:
+            fid = fid[9:] # rm prefix `dataset6_`
             proc_volume(osp.join(data_p, f), lab_f, f"d6_{fid}")
         except itk.support.extras.TemplateTypeError:
             # TemplateTypeError: itk.OrientImageFilter is not wrapped for input type `None`.

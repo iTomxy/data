@@ -65,8 +65,8 @@ def getRangeImageDepth(label):
 
 P = osp.expanduser("~/data/verse")
 SAVE_P = osp.join(P, "processed-verse19")
-SAVE_NII_P = osp.join(SAVE_P, "nii")
-SAVE_NPY_P = osp.join(SAVE_P, "npy")
+SAVE_NII_P = SAVE_P # osp.join(SAVE_P, "nii")
+# SAVE_NPY_P = osp.join(SAVE_P, "npy")
 
 for subset in ("test", "training", "validation"):
     print('\t', subset)
@@ -75,9 +75,9 @@ for subset in ("test", "training", "validation"):
     label_d = osp.join(P, subset_d, "derivatives")
 
     save_nii_p = osp.join(SAVE_NII_P, subset)
-    save_npy_p = osp.join(SAVE_NPY_P, subset)
+    # save_npy_p = osp.join(SAVE_NPY_P, subset)
     os.makedirs(save_nii_p, exist_ok=True)
-    os.makedirs(save_npy_p, exist_ok=True)
+    # os.makedirs(save_npy_p, exist_ok=True)
 
     for vol_name in os.listdir(image_d):
         if not vol_name.startswith("sub-verse"):
@@ -120,12 +120,12 @@ for subset in ("test", "training", "validation"):
             # image_arr = zoom(image_arr, [144/dn, 144/hn, 144/wn], order=0)
             # label_arr = zoom(label_arr, [144/dn, 144/hn, 144/wn], order=0)
 
-            image = sitk.GetImageFromArray(image_arr)
-            label = sitk.GetImageFromArray(label_arr)
+            # save .npy
+            # np.save(os.path.join(save_npy_p, osp.basename(image_path)[:-7]), image_arr)
+            # np.save(os.path.join(save_npy_p, osp.basename(label_path)[:-7]), label_arr)
 
             # save .nii.gz
+            image = sitk.GetImageFromArray(image_arr)
+            label = sitk.GetImageFromArray(label_arr)
             sitk.WriteImage(image, os.path.join(save_nii_p, osp.basename(image_path)))
             sitk.WriteImage(label, os.path.join(save_nii_p, osp.basename(label_path)))
-            # save .npy
-            np.save(os.path.join(save_npy_p, osp.basename(image_path)[:-7]), image_arr)
-            np.save(os.path.join(save_npy_p, osp.basename(label_path)[:-7]), label_arr)
