@@ -37,7 +37,7 @@ for sub_id in range(1, 8):
     vol_list = [f[: f.rfind('_')] for f in vol_list]
 
     record["splitting"][f"d{sub_id}"] = {
-        "train": vol_list[:n_train],
+        "training": vol_list[:n_train],
         "test": vol_list[n_train: n_train + n_test],
         "validation": vol_list[n_train + n_test:]
     }
