@@ -121,11 +121,11 @@ for subset in ("test", "training", "validation"):
             # label_arr = zoom(label_arr, [144/dn, 144/hn, 144/wn], order=0)
 
             # save .npy
-            # np.save(os.path.join(save_npy_p, osp.basename(image_path)[:-7]), image_arr)
-            # np.save(os.path.join(save_npy_p, osp.basename(label_path)[:-7]), label_arr)
+            # np.save(os.path.join(save_npy_p, fid+"_image"), image_arr)
+            # np.save(os.path.join(save_npy_p, fid+"_label"), label_arr)
 
             # save .nii.gz
             image = sitk.GetImageFromArray(image_arr)
             label = sitk.GetImageFromArray(label_arr)
-            sitk.WriteImage(image, os.path.join(save_nii_p, osp.basename(image_path)))
-            sitk.WriteImage(label, os.path.join(save_nii_p, osp.basename(label_path)))
+            sitk.WriteImage(image, os.path.join(save_nii_p, fid+"_image.nii.gz"))
+            sitk.WriteImage(label, os.path.join(save_nii_p, fid+"_label.nii.gz"))
