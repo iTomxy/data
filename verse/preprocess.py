@@ -1,7 +1,7 @@
 import os, os.path as osp, glob
 import numpy as np
 from tqdm import tqdm
-import SimpleITK as sitk
+# import SimpleITK as sitk
 import itk
 
 
@@ -27,6 +27,7 @@ verse/
 
 def read_reorient2RAI(path):
     itk_img = itk.imread(path)
+    # print("original:", itk_img.GetDirection(), '\n', itk_img.GetOrigin(), '\n', itk_img.GetSpacing())
 
     filter = itk.OrientImageFilter.New(itk_img)
     filter.UseImageDirectionOn()
@@ -36,9 +37,10 @@ def read_reorient2RAI(path):
     filter.SetDesiredCoordinateDirection(m)
     filter.Update()
     itk_img = filter.GetOutput()
+    # print("after:", itk_img.GetDirection(), '\n', itk_img.GetOrigin(), '\n', itk_img.GetSpacing())
 
     itk_arr = itk.GetArrayViewFromImage(itk_img)
-    return itk_arr
+    return itk_img, itk_arr
 
 
 def getRangeImageDepth(label):
@@ -64,7 +66,16 @@ def getRangeImageDepth(label):
 
 
 P = osp.expanduser("~/data/verse")
-SAVE_P = osp.join(P, "processed-verse19")
+MODE = "window+std"
+assert MODE in ("window+std", "norm"), MODE
+if "window+std" == MODE: # windowing + standardisation
+    WINDOW_LEVEL = 300
+    WINDOW_WIDTH = 290
+    WINDOW_MIN = WINDOW_LEVEL - WINDOW_WIDTH
+    WINDOW_MAX = WINDOW_LEVEL + WINDOW_WIDTH
+    SAVE_P = osp.join(P, f"processed-verse19-wl{WINDOW_LEVEL}-ww{WINDOW_WIDTH}-std")
+elif "norm" == MODE: # normalisation
+    SAVE_P = osp.join(P, "processed-verse19-norm")
 SAVE_NII_P = SAVE_P # osp.join(SAVE_P, "nii")
 # SAVE_NPY_P = osp.join(SAVE_P, "npy")
 
@@ -92,8 +103,8 @@ for subset in ("test", "training", "validation"):
             label_path = osp.join(label_d, vol_name, f"{fid}_seg-vert_msk.nii.gz")
             assert osp.isfile(image_path), f"* No label file: {label_path} of image {image_path}"
 
-            image_arr = read_reorient2RAI(image_path)
-            label_arr = read_reorient2RAI(label_path)
+            image_itk, image_arr = read_reorient2RAI(image_path)
+            label_itk, label_arr = read_reorient2RAI(label_path)
 
             image_arr = image_arr.astype(np.float32)
             # label_arr = convert_labels(label_arr)
@@ -111,10 +122,14 @@ for subset in ("test", "training", "validation"):
             image_arr = image_arr[d_s:d_e, h_s:h_e, w_s: w_e]
             label_arr = label_arr[d_s:d_e, h_s:h_e, w_s: w_e]
 
-            upper_bound_intensity_level = np.percentile(image_arr, 98)
-
-            image_arr = image_arr.clip(min=0, max=upper_bound_intensity_level)
-            image_arr = (image_arr - image_arr.mean()) / (image_arr.std() + 1e-8)
+            if "norm" == MODE:
+                upper_bound_intensity_level = np.percentile(image_arr, 98)
+                image_arr = image_arr.clip(min=0, max=upper_bound_intensity_level)
+                image_arr = (image_arr - image_arr.mean()) / (image_arr.std() + 1e-8)
+            elif "window+std" == MODE:
+                image_arr = np.clip(image_arr, WINDOW_MIN, WINDOW_MAX)
+                image_arr = (image_arr - WINDOW_MIN) / (WINDOW_MAX - WINDOW_MIN) # in [0, 1]
+                image_arr = (image_arr * 255).astype(np.uint8) # in [0, 255]
 
             # dn, hn, wn = image_arr.shape
             # image_arr = zoom(image_arr, [144/dn, 144/hn, 144/wn], order=0)
@@ -125,7 +140,14 @@ for subset in ("test", "training", "validation"):
             # np.save(os.path.join(save_npy_p, fid+"_label"), label_arr)
 
             # save .nii.gz
-            image = sitk.GetImageFromArray(image_arr)
-            label = sitk.GetImageFromArray(label_arr)
-            sitk.WriteImage(image, os.path.join(save_nii_p, fid+"_image.nii.gz"))
-            sitk.WriteImage(label, os.path.join(save_nii_p, fid+"_label.nii.gz"))
+            image = itk.GetImageViewFromArray(image_arr)
+            label = itk.GetImageViewFromArray(label_arr)
+            # restore meta info
+            image.SetDirection(image_itk.GetDirection())
+            image.SetSpacing(image_itk.GetSpacing())
+            label.SetDirection(label_itk.GetDirection())
+            label.SetSpacing(label_itk.GetSpacing())
+            # print("on save (image):", image.GetDirection(), '\n', image.GetOrigin(), '\n', image.GetSpacing())
+            # print("on save (label):", label.GetDirection(), '\n', label.GetOrigin(), '\n', label.GetSpacing())
+            itk.imwrite(image, os.path.join(save_nii_p, fid+"_image.nii.gz"))
+            itk.imwrite(label, os.path.join(save_nii_p, fid+"_label.nii.gz"))

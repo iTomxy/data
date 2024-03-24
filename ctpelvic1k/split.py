@@ -7,7 +7,7 @@ Split each sub-dataset respectively.
 """
 
 P = osp.expanduser("~/data/ctpelvic1k")
-VOLUME_P = osp.join(P, "processed-ctpelvic1k")
+VOLUME_P = osp.join(P, "processed-ctpelvic1k-wl300-ww290-std")
 
 TRAIN_RATIO = 0.6
 TEST_RATIO = 0.2

@@ -214,3 +214,4 @@ log*/
 fake-jpg.txt
 coco/input*.txt
 coco/*.txt.conll
+ctpelvic1k/error-log.json

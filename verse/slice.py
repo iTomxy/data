@@ -9,8 +9,8 @@ Slice preprocessed .npy files by ./preprocess.py.
 
 
 P = osp.expanduser("~/data/verse")
-SAVE_P = osp.join(P, "processed-verse19")#, "npy")
-SLICE_P = osp.join(P, "processed-verse19-npy-horizontal")
+SAVE_P = osp.join(P, "processed-verse19-wl300-ww290-std")#, "npy")
+SLICE_P = osp.join(P, "processed-verse19-wl300-ww290-std-h-np")
 # os.makedirs(SLICE_P, exist_ok=True)
 AXIS = 2 # RAI, horizontal
 
@@ -32,9 +32,11 @@ for subset in os.listdir(SAVE_P):
         #         continue
         # else:
         #     os.makedirs(slice_p)#, exist_ok=True)
-        for i in range(vol.shape[AXIS]):
+        if 0 != AXIS:
+            vol = np.moveaxis(vol, AXIS, 0)
+        for i in range(vol.shape[0]):
             # if osp.isfile(osp.join(slice_p, f"{stem}_{i}.npy")): # skip finished
             #     continue
             print(i, end='\r')
-            s = vol[:, :, i]
+            s = vol[i]
             np.save(osp.join(slice_p, f"{stem}_{i}"), s)
