@@ -108,6 +108,7 @@ for subset in ("test", "training", "validation"):
 
             image_arr = image_arr.astype(np.float32)
             # label_arr = convert_labels(label_arr)
+            label_arr = label_arr.astype(np.uint8) # class id in [0, 28]
 
             d_s, d_e, h_s, h_e, w_s, w_e = getRangeImageDepth(label_arr)
             d, h, w = image_arr.shape
