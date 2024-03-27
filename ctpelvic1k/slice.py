@@ -9,8 +9,8 @@ Slice preprocessed .npy files by ./preprocess.py.
 
 
 P = osp.expanduser("~/data/ctpelvic1k")
-SAVE_P = osp.join(P, "processed-ctpelvic1k-wl300-ww290-std")#, "npy")
-SLICE_P = osp.join(P, "processed-ctpelvic1k-wl300-ww290-std-h-np")
+SAVE_P = osp.join(P, "processed-ctpelvic1k")#, "npy")
+SLICE_P = osp.join(P, "processed-ctpelvic1k-h-np")
 # os.makedirs(SLICE_P, exist_ok=True)
 AXIS = 2 # RAI, horizontal
 

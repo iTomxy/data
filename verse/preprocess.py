@@ -66,9 +66,11 @@ def getRangeImageDepth(label):
 
 
 P = osp.expanduser("~/data/verse")
-MODE = "window+std"
-assert MODE in ("window+std", "norm"), MODE
-if "window+std" == MODE: # windowing + standardisation
+MODE = "none"
+assert MODE in ("none", "window+std", "norm"), MODE
+if "none" == MODE:
+    SAVE_P = osp.join(P, "processed-verse19")
+elif "window+std" == MODE: # windowing + standardisation
     WINDOW_LEVEL = 300
     WINDOW_WIDTH = 290
     WINDOW_MIN = WINDOW_LEVEL - WINDOW_WIDTH
@@ -123,14 +125,16 @@ for subset in ("test", "training", "validation"):
             image_arr = image_arr[d_s:d_e, h_s:h_e, w_s: w_e]
             label_arr = label_arr[d_s:d_e, h_s:h_e, w_s: w_e]
 
+            upper_bound_intensity_level = np.percentile(image_arr, 98)
+            image_arr = image_arr.clip(min=0, max=upper_bound_intensity_level)
             if "norm" == MODE:
-                upper_bound_intensity_level = np.percentile(image_arr, 98)
-                image_arr = image_arr.clip(min=0, max=upper_bound_intensity_level)
-                image_arr = (image_arr - image_arr.mean()) / (image_arr.std() + 1e-8)
+                image_arr = (image_arr - image_arr.mean()) / (image_arr.std() + np.finfo(np.float32).eps)
             elif "window+std" == MODE:
+                # mask_oor = (image_arr < WINDOW_MIN) | (image_arr > WINDOW_MAX) # out of range
                 image_arr = np.clip(image_arr, WINDOW_MIN, WINDOW_MAX)
                 image_arr = (image_arr - WINDOW_MIN) / (WINDOW_MAX - WINDOW_MIN) # in [0, 1]
                 image_arr = (image_arr * 255).astype(np.uint8) # in [0, 255]
+                # image_arr[mask_oor] = 0
 
             # dn, hn, wn = image_arr.shape
             # image_arr = zoom(image_arr, [144/dn, 144/hn, 144/wn], order=0)
