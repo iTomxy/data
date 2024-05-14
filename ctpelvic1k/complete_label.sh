@@ -1,1 +1,2 @@
-python ../verse/complete_label.py $HOME/sd10t/ctpelvic1k/processed-ctpelvic1k $HOME/sd10t/ctpelvic1k/processed-ctpelvic1k_ts-bone-label
+P=$HOME/sd10t/ctpelvic1k
+python ../verse/complete_label.py $P/processed-ctpelvic1k $P/processed-ctpelvic1k-ts-bone-label
