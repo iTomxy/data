@@ -1,0 +1,40 @@
+import os, os.path as osp, glob, time, random, json
+
+"""
+Split preprocessed volumes by ./sieve.py.
+Split each sub-dataset respectively.
+"""
+
+P = "/home/ftao/Data/tyliang/data/totalsegmentator"
+TRAIN_RATIO = 0.6
+TEST_RATIO = 0.2
+VAL_RATIO = 1 - TRAIN_RATIO - TEST_RATIO
+
+
+def split(sub_dataset):
+    vol_list = os.listdir(osp.join(P, sub_dataset))
+    n = len(vol_list)
+    assert n > 0
+    print(vol_list[:5])
+
+    n_train = int(n * TRAIN_RATIO)
+    n_test = int(n * TEST_RATIO)
+    n_val = n - n_train - n_test
+
+    random.shuffle(vol_list)
+    record = {
+        "time": "UTC " + time.asctime(time.gmtime()),
+        "train_ratio": TRAIN_RATIO,
+        "test_ratio": TEST_RATIO,
+        "validation_ratio": VAL_RATIO,
+        "splitting": {}
+    }
+    record["splitting"]["training"] = vol_list[: n_train]
+    record["splitting"]["test"] = vol_list[n_train: n_train + n_test]
+    record["splitting"]["validation"] = vol_list[n_train + n_test: ]
+    with open(osp.join(P, f"splitting-{sub_dataset}.json"), "w") as f:
+        json.dump(record, f)#, indent=1)
+
+
+split("pelvic")
+split("spine")
