@@ -1,4 +1,5 @@
-import os, os.path as osp, json
+import os, os.path as osp, json, pprint
+import numpy as np
 import nibabel as nib
 
 """
@@ -9,6 +10,7 @@ Download & extract data using ./download.sh before executing this file.
 
 with open("classes.json", "r") as f:
     idc = json.load(f)
+pprint.pprint(idc)
 cls_id = {} # class name -> id
 for cid, cn in idc.items():
     cls_id[cn] = int(cid)
@@ -16,7 +18,7 @@ for cid, cn in idc.items():
 
 P = "/home/ftao/Data/tyliang/data/totalsegmentator"
 for vid in os.listdir(osp.join(P, "data")):
-    print(vid, end='\n')
+    print(vid, end='\r')
     label_path = osp.join(P, "data", vid, "segmentations")
     comb_label = None
     for lab_f in os.listdir(label_path):
@@ -24,6 +26,7 @@ for vid in os.listdir(osp.join(P, "data")):
         cid = cls_id[cn]
         assert cn in cls_id, cn
         lab_nib = nib.load(osp.join(label_path, lab_f))
+        assert ('R', 'A', 'S') == nib.aff2axcodes(lab_nib.affine) # confirm consistent orientation
         lab = lab_nib.get_fdata() # float64, in {0.0, 1.0}
         if comb_label is None:
             # the original dtype is also uint8, which is enough for 117 classes
