@@ -11,15 +11,24 @@ TEST_RATIO = 0.2
 VAL_RATIO = 1 - TRAIN_RATIO - TEST_RATIO
 
 
-def split(sub_dataset):
+def split(sub_dataset, small=False):
+    """small: bool, make a small subset of it"""
     vol_list = os.listdir(osp.join(P, sub_dataset))
     n = len(vol_list)
     assert n > 0
     print(vol_list[:5])
 
-    n_train = int(n * TRAIN_RATIO)
-    n_test = int(n * TEST_RATIO)
-    n_val = n - n_train - n_test
+    if small:
+        random.shuffle(vol_list)
+        vol_list = vol_list[:200]
+        n = len(vol_list)
+        n_train = int(n // 2)
+        n_test = int(n // 4)
+        n_val = n - n_train - n_test
+    else:
+        n_train = int(n * TRAIN_RATIO)
+        n_test = int(n * TEST_RATIO)
+        n_val = n - n_train - n_test
 
     random.shuffle(vol_list)
     record = {
@@ -32,9 +41,13 @@ def split(sub_dataset):
     record["splitting"]["training"] = vol_list[: n_train]
     record["splitting"]["test"] = vol_list[n_train: n_train + n_test]
     record["splitting"]["validation"] = vol_list[n_train + n_test: ]
-    with open(osp.join(P, f"splitting-{sub_dataset}.json"), "w") as f:
+    fn = f"splitting-{sub_dataset}"
+    if small: fn += "-small"
+    with open(osp.join(P, f"{fn}.json"), "w") as f:
         json.dump(record, f)#, indent=1)
 
 
 split("pelvic")
 split("spine")
+split("pelvic", True)
+split("spine", True)
