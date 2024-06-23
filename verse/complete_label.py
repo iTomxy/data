@@ -28,7 +28,7 @@ def complete(image_nii, label_nii, save_nii):
     pred = pred_nib.get_fdata().astype(np.uint8) # in [0, 104]
     # combine original partial label & TotalSegmentator prediction
     comb_isb = ((label > 0) | is_bone(pred)).astype(np.uint8)
-    isb_nib = nib.Nifti1Image(comb_isb, affine=label_nib._affine)
+    isb_nib = nib.Nifti1Image(comb_isb, affine=label_nib._affine, header=label_nib.header)
     os.makedirs(osp.dirname(save_nii) or '.', exist_ok=True)
     nib.save(isb_nib, save_nii)
 
