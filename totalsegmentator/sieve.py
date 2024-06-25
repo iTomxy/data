@@ -21,11 +21,12 @@ def binarise_coi(comb_lab, coi):
     return bin_coi.astype(np.uint8)
 
 
-def sieve_n_slice(src_path, dest_path, coi):
+def sieve_n_slice(src_path, dest_path, coi, c_drop=[]):
     """sieve volume slices that contain classes of interest, and slice them along the IS-axis
     src_path: str, path to original TotalSegmentator volume directories
     dest_path: str, path to save sieved & sliced volumes
     coi: List[int], class IDs of interest
+    c_drop: List[int], if provided, exclude slices containing these classes
     """
     for vid in os.listdir(src_path):
         save_dir = osp.join(dest_path, vid)
@@ -40,7 +41,12 @@ def sieve_n_slice(src_path, dest_path, coi):
         if bin_coi.sum() == 0:
             continue
 
-        supp = np.where(bin_coi > 0)
+        poi = bin_coi > 0 # positions of interest
+        if len(c_drop) > 0:
+            bin_cd = binarise_coi(comb_lab, c_drop)
+            poi &= (0 == bin_cd)
+
+        supp = np.where(poi)
         # l, r = supp[0].min(), supp[0].max()
         # f, b = supp[1].min(), supp[1].max()
         u, d = supp[2].min(), supp[2].max()
@@ -75,10 +81,10 @@ def sieve_n_slice(src_path, dest_path, coi):
         os.rename(tmp_dir, save_dir) # mark as done
 
 
-P = "/home/ftao/Data/tyliang/data/totalsegmentator"
+P = osp.expanduser("~/sd10t/totalsegmentator")
 
 print("pelvic, mimic ctpelvic1k")
 sieve_n_slice(osp.join(P, "data"), osp.join(P, "pelvic"), [25, 77, 78])
 
 print("spine, mimic verse19")
-sieve_n_slice(osp.join(P, "data"), osp.join(P, "spine"), list(range(26, 50+1)))
+sieve_n_slice(osp.join(P, "data"), osp.join(P, "spine"), list(range(26, 50+1)), [25, 77, 78])

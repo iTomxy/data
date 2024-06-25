@@ -5,7 +5,7 @@ Split preprocessed volumes by ./sieve.py.
 Split each sub-dataset respectively.
 """
 
-P = "/home/ftao/Data/tyliang/data/totalsegmentator"
+P = osp.expanduser("~/sd10t/totalsegmentator")
 TRAIN_RATIO = 0.6
 TEST_RATIO = 0.2
 VAL_RATIO = 1 - TRAIN_RATIO - TEST_RATIO
