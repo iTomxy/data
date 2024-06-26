@@ -3,12 +3,12 @@
 Download through the mega link in [1/project] instead of the FDU server link
 because the latter is not accessible (on Sept. 21, 2023).
 
-There are also preprecessed tfrecord-format data originally provided at [2].
+There are also preprocessed tfrecord-format data originally provided at [2].
 Both [3,4] use it.
-[3,4] provides codes for converting nii.gz data to npz format.
+[3,4] provide codes for converting nii.gz data to npz format.
 [5] converted the tfrecord-format data into npy-format,
 and provides downloading link.
-[6] prodices codes for converting tfrecord-format data to npy-format.
+[6] provides codes for converting tfrecord-format data to npy-format.
 [8] provides preprocessing code (process from raw nii.gz files).
 
 # References
