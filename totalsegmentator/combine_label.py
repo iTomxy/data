@@ -35,6 +35,6 @@ for vid in os.listdir(osp.join(P, "data")):
         comb_label[lab > 0.5] = cid
 
     # keep original affine & header (incl. spacing)
-    comb_lab_nib = lab_nib.__class__(comb_label, lab_nib.affine, lab_nib.header)
+    comb_lab_nib = lab_nib.__class__(comb_label, lab_nib.affine, lab_nib.header, lab_nib.extra)
     assert comb_lab_nib.shape == lab_nib.shape
     nib.save(comb_lab_nib, osp.join(osp.join(P, "data", vid, "comb_label.nii.gz")))

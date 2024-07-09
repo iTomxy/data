@@ -48,6 +48,8 @@ def split(sub_dataset, small=False):
 
 
 split("pelvic")
-split("spine")
 split("pelvic", True)
+split("spine")
 split("spine", True)
+split("spineLS-pelvic")
+split("spineLS-pelvic", True)
