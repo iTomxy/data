@@ -16,7 +16,7 @@ for cid, cn in idc.items():
     cls_id[cn] = int(cid)
 
 
-P = "/home/ftao/Data/tyliang/data/totalsegmentator"
+P = osp.expanduser("~/data/totalsegmentator")
 for vid in os.listdir(osp.join(P, "data")):
     print(vid, end='\r')
     label_path = osp.join(P, "data", vid, "segmentations")
