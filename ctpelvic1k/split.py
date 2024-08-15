@@ -43,5 +43,5 @@ for sub_id in range(1, 8):
     }
     # break
 
-with open(osp.join(P, "splitting.json"), "w") as f:
+with open(osp.join(P, "splitting-ctpelvic1k.json"), "w") as f:
     json.dump(record, f, indent=1)
