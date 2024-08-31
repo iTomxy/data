@@ -1,12 +1,12 @@
 # data
 
 Processing of some ML/DL datasets.
-See corresponding markdown file or folder for detail information.
+See corresponding markdown files or folders for detail information.
 
 # Citation
 
 If you find these processing code useful,
-please consider cite this repository with:
+please consider citing this repository with:
 ```
 @software{Liang_data_2024,
     author = {Liang, Tianyou},
