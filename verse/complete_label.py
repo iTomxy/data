@@ -1,4 +1,5 @@
 import argparse, os, os.path as osp, glob, shutil
+import importlib#, packaging
 import numpy as np
 import nibabel as nib
 import totalsegmentator as totalseg
@@ -8,15 +9,22 @@ from totalsegmentator.python_api import totalsegmentator
 """
 Complete bone annotation using Total Segmentator.
 Combined labels are binary: {0: non-bone, 1: bone}
-Use TotalSegmentator==1.5.7 here, see `./env_totalseg.sh`.
 """
 
+TOTALSEG_VERSION = importlib.metadata.version('totalsegmentator')
+MAJOR_VERSION = int(TOTALSEG_VERSION.split('.')[0])
+assert MAJOR_VERSION in (1, 2), TOTALSEG_VERSION
+
+
 def is_bone(pred_np):
-    """Class list of v1 Total Segmentator: totalsegmentator.map_to_binary.class_map['total_v1']
+    """Class list of TotalSegmentator: totalsegmentator.map_to_binary.class_map
     Link: https://github.com/wasserth/TotalSegmentator/blob/master/totalsegmentator/map_to_binary.py
     """
     # print(class_map['total_v1'])
-    return ((18 <= pred_np) & (pred_np <= 41)) | ((58 <= pred_np) & (pred_np <= 92))
+    if 1 == MAJOR_VERSION:
+        return ((18 <= pred_np) & (pred_np <= 41)) | ((58 <= pred_np) & (pred_np <= 92))
+    else:
+        return ((25 <= pred_np) & (pred_np <= 50)) | ((69 <= pred_np) & (pred_np <= 78)) + ((91 <= pred_np) & (pred_np <= 116))
 
 
 def complete(image_nii, label_nii, save_nii):
