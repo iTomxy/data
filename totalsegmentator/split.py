@@ -11,16 +11,16 @@ TEST_RATIO = 0.2
 VAL_RATIO = 1 - TRAIN_RATIO - TEST_RATIO
 
 
-def split(sub_dataset, small=False):
-    """small: bool, make a small subset of it"""
+def split(sub_dataset, small=0):
+    """small: int, >0 to make a small subset of it"""
     vol_list = os.listdir(osp.join(P, sub_dataset))
     n = len(vol_list)
     assert n > 0
     print(vol_list[:5])
 
-    if small:
+    if small > 0:
         random.shuffle(vol_list)
-        vol_list = vol_list[:200]
+        vol_list = vol_list[:small]
         n = len(vol_list)
         n_train = int(n // 2)
         n_test = int(n // 4)
@@ -48,8 +48,8 @@ def split(sub_dataset, small=False):
 
 
 split("pelvic")
-split("pelvic", True)
+split("pelvic", 200)
 split("spine")
-split("spine", True)
+split("spine", 200)
 split("spineLSpelvic")
-split("spineLSpelvic", True)
+split("spineLSpelvic", 200)
