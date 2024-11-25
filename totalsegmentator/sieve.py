@@ -32,10 +32,10 @@ def sieve_n_slice(src_path, dest_path, coi, c_drop=[], complete=False):
     if complete:
         assert os.path.isfile("complete-volumes.json"), "Run ./sieve-complete.py to select complete volumes first"
         with open("complete-volumes.json", "r") as f:
-            candidate_vols = json.load(f)["volume"]
+            complete_vols = json.load(f)["volume"]
 
     for vid in os.listdir(src_path):
-        if complete and vid not in candidate_vols:
+        if complete and vid not in complete_vols:
             continue
         save_dir = osp.join(dest_path, vid)
         if osp.isdir(save_dir):
