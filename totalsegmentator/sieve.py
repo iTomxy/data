@@ -21,14 +21,22 @@ def binarise_coi(comb_lab, coi):
     return bin_coi.astype(np.uint8)
 
 
-def sieve_n_slice(src_path, dest_path, coi, c_drop=[]):
+def sieve_n_slice(src_path, dest_path, coi, c_drop=[], complete=False):
     """sieve volume slices that contain classes of interest, and slice them along the IS-axis
     src_path: str, path to original TotalSegmentator volume directories
     dest_path: str, path to save sieved & sliced volumes
     coi: List[int], class IDs of interest
-    c_drop: List[int], if provided, exclude slices containing these classes
+    c_drop: List[int] = [], if provided, exclude slices containing these classes
+    complete: bool = True, only select complete volumes w.r.t. bone. Based on ./sieve-complete.py.
     """
+    if complete:
+        assert os.path.isfile("complete-volumes.json"), "Run ./sieve-complete.py to select complete volumes first"
+        with open("complete-volumes.json", "r") as f:
+            candidate_vols = json.load(f)["volume"]
+
     for vid in os.listdir(src_path):
+        if complete and vid not in candidate_vols:
+            continue
         save_dir = osp.join(dest_path, vid)
         if osp.isdir(save_dir):
             continue
