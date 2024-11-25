@@ -102,3 +102,7 @@ sieve_n_slice(osp.join(P, "data"), osp.join(P, "spine"), coi, c2drop)
 print("spine (lumbar & sacral) + pelvic (sacrum, hip)")
 coi = list(range(26, 31+1)) + [25, 77, 78]
 sieve_n_slice(osp.join(P, "data"), osp.join(P, "spineLSpelvic"), coi)
+
+print("C1-7, humerus, scapula, clavicula")
+coi = list(range(44, 50+1)) + [69, 70] + [71, 72] + [73, 74]
+sieve_n_slice(osp.join(P, "data"), osp.join(P, "spineCshoulder"), coi)
