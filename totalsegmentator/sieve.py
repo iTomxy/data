@@ -89,7 +89,7 @@ def sieve_n_slice(src_path, dest_path, coi, c_drop=[], complete=False):
             tmp_slice_dir = slice_dir + "_tmp"
             os.makedirs(tmp_slice_dir, exist_ok=True)
             for i in range(img_cut_np.shape[2]): # along IS-axis
-                np.savez_compressed(osp.join(tmp_slice_dir, str(i)), image=img_cut_np[:, :, i], label=cl_cut_np[:, :, i])
+                np.savez_compressed(osp.join(tmp_slice_dir, str(i)), image=img_cut_np[:, :, i], label=cl_cut_np[:, :, i], spacing=img_nib.header.get_zooms())
 
             os.rename(tmp_slice_dir, slice_dir) # mark as done
 

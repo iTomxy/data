@@ -1,24 +1,26 @@
-import os, os.path as osp, glob, pprint, json
+import os, os.path as osp, pprint, json, argparse, sys, glob
 from collections import defaultdict
 import numpy as np
-from tqdm import tqdm
-# import SimpleITK as sitk
+import SimpleITK as sitk
 import itk
 
+sys.path.append("../verse")
+from complete_label import predict
 
-"""
+"""CTPelvic1K
+Unify orientation, predict with pretrained TotalSegmentator model for unlabelled bones, and slice along the IS dimension.
 From: https://github.com/xmed-lab/GenericSSL/blob/main/code/data/preprocess_mmwhs.py
 """
 
-
-def read_reorient2RAI(path):
+def read_reorient2LPS(path):
+    """reorient using itk"""
     itk_img = itk.imread(path)
 
     filter = itk.OrientImageFilter.New(itk_img)
     filter.UseImageDirectionOn()
     filter.SetInput(itk_img)
     m = itk.Matrix[itk.D, 3, 3]()
-    m.SetIdentity()
+    m.SetIdentity() # identity direction matrix gives LPS
     filter.SetDesiredCoordinateDirection(m)
     filter.Update()
     itk_img = filter.GetOutput()
@@ -49,26 +51,7 @@ def getRangeImageDepth(label):
     return d_s, d_e, h_s, h_e, w_s, w_e
 
 
-P = osp.expanduser("~/data/ctpelvic1k")
-MODE = "none"
-assert MODE in ("none", "window+std", "norm"), MODE
-if "none" == MODE:
-    SAVE_P = osp.join(P, "processed-ctpelvic1k")
-elif "window+std" == MODE: # windowing + standardisation
-    WINDOW_LEVEL = 300
-    WINDOW_WIDTH = 290
-    WINDOW_MIN = WINDOW_LEVEL - WINDOW_WIDTH
-    WINDOW_MAX = WINDOW_LEVEL + WINDOW_WIDTH
-    SAVE_P = osp.join(P, f"processed-ctpelvic1k-wl{WINDOW_LEVEL}-ww{WINDOW_WIDTH}-std")
-elif "norm" == MODE: # normalisation
-    SAVE_P = osp.join(P, "processed-ctpelvic1k-norm")
-SAVE_NII_P = SAVE_P # osp.join(SAVE_P, "nii")
-# SAVE_NPY_P = osp.join(SAVE_P, "npy")
-os.makedirs(SAVE_NII_P, exist_ok=True)
-# os.makedirs(SAVE_NPY_P, exist_ok=True)
-
-
-def proc_volume(image_path, label_path, save_fid):
+def proc_volume(SAVE_NII_P, image_path, label_path, save_fid):
     """process & save 1 volume"""
     if  osp.isfile(os.path.join(SAVE_NII_P, f"{save_fid}_image.nii.gz")) and \
         osp.isfile(os.path.join(SAVE_NII_P, f"{save_fid}_label.nii.gz")): #and \
@@ -76,8 +59,8 @@ def proc_volume(image_path, label_path, save_fid):
         # osp.isfile(os.path.join(SAVE_NPY_P, f"{save_fid}_label.npy")):
         return
 
-    image_itk, image_arr = read_reorient2RAI(image_path)
-    label_itk, label_arr = read_reorient2RAI(label_path)
+    image_itk, image_arr = read_reorient2LPS(image_path)
+    label_itk, label_arr = read_reorient2LPS(label_path)
 
     image_arr = image_arr.astype(np.float32)
     # label_arr = convert_labels(label_arr)
@@ -86,8 +69,10 @@ def proc_volume(image_path, label_path, save_fid):
     d_s, d_e, h_s, h_e, w_s, w_e = getRangeImageDepth(label_arr)
     d, h, w = image_arr.shape
 
-    d_s = (d_s - 4).clip(min=0, max=d)
-    d_e = (d_e + 4).clip(min=0, max=d)
+    # d_s = (d_s - 4).clip(min=0, max=d)
+    # d_e = (d_e + 4).clip(min=0, max=d)
+    d_s = np.clip(d_s, 0, d)
+    d_e = np.clip(d_e, 0, d)
     h_s = (h_s - 4).clip(min=0, max=h)
     h_e = (h_e + 4).clip(min=0, max=h)
     w_s = (w_s - 4).clip(min=0, max=w)
@@ -98,20 +83,6 @@ def proc_volume(image_path, label_path, save_fid):
 
     upper_bound_intensity_level = np.percentile(image_arr, 98)
     image_arr = image_arr.clip(min=0, max=upper_bound_intensity_level)
-    if "norm" == MODE:
-        image_arr = (image_arr - image_arr.mean()) / (image_arr.std() + np.finfo(np.float32).eps)
-    elif "window+std" == MODE:
-        image_arr = np.clip(image_arr, WINDOW_MIN, WINDOW_MAX)
-        image_arr = (image_arr - WINDOW_MIN) / (WINDOW_MAX - WINDOW_MIN) # in [0, 1]
-        image_arr = (image_arr * 255).astype(np.uint8) # in [0, 255]
-
-    # dn, hn, wn = image_arr.shape
-    # image_arr = zoom(image_arr, [144/dn, 144/hn, 144/wn], order=0)
-    # label_arr = zoom(label_arr, [144/dn, 144/hn, 144/wn], order=0)
-
-    # save .npy
-    # np.save(os.path.join(SAVE_NPY_P, f"{save_fid}_image.npy"), image_arr)
-    # np.save(os.path.join(SAVE_NPY_P, f"{save_fid}_label.npy"), label_arr)
 
     # save .nii.gz
     image = itk.GetImageViewFromArray(image_arr)
@@ -125,121 +96,204 @@ def proc_volume(image_path, label_path, save_fid):
     itk.imwrite(label, os.path.join(SAVE_NII_P, f"{save_fid}_label.nii.gz"))
 
 
-err_log = defaultdict(list)
+def reorient_data(args):
+    """reorient data & save in a single folder"""
+    err_log = defaultdict(list)
+    SAVE_NII_P = os.path.join(args.data_path, "reorient_LPS")
+    os.makedirs(SAVE_NII_P, exist_ok=True)
 
-print("1 abdomen")
-data_p = osp.join(P, "dataset1_abdomen/RawData")
-label_p = osp.join(P, "dataset1_mask_mappingback")
-cnt = 0
-for subset in os.listdir(data_p):
-    print('\t', subset)
-    subset_p = osp.join(data_p, subset, "img")
-    for f in os.listdir(subset_p):
-        # img0001.nii.gz, dataset1_img0001_mask_4label.nii.gz
-        fid = f[:-7]
-        lab_f = osp.join(label_p, f"dataset1_{fid}_mask_4label.nii.gz")
+    print("1 abdomen")
+    data_p = osp.join(args.data_path, "dataset1_abdomen/RawData")
+    label_p = osp.join(args.data_path, "dataset1_mask_mappingback")
+    cnt = 0
+    for subset in os.listdir(data_p):
+        print('\t', subset)
+        subset_p = osp.join(data_p, subset, "img")
+        for f in os.listdir(subset_p):
+            # img0001.nii.gz, dataset1_img0001_mask_4label.nii.gz
+            fid = f[:-len(".nii.gz")]
+            lab_f = osp.join(label_p, f"dataset1_{fid}_mask_4label.nii.gz")
+            new_fid = fid[len("img"):]
+            if osp.isfile(lab_f):
+                print(f, end='\r')
+                proc_volume(SAVE_NII_P, osp.join(subset_p, f), lab_f, f"d1_{new_fid}")
+                cnt += 1
+    print("d1:", cnt)
+
+
+    print("2 colonog (NOT DOWNLOAD YET)")
+
+
+    print("3 MSD-T10")
+    data_p = osp.join(args.data_path, "dataset3_msd-t10")
+    label_p = osp.join(args.data_path, "dataset3_mask_mappingback")
+    cnt = 0
+    for subset in ("imagesTr", "imagesTs"):
+        print('\t', subset)
+        subset_p = osp.join(data_p, subset)
+        for f in os.listdir(subset_p):
+            # colon_001.nii.gz, dataset3_colon_001_mask_4label.nii.gz
+            fid = f[:-len(".nii.gz")]
+            lab_f = osp.join(label_p, f"dataset3_{fid}_mask_4label.nii.gz")
+            new_fid = fid[len("colon_"):]
+            if osp.isfile(lab_f):
+                print(f, end='\r')
+                proc_volume(SAVE_NII_P, osp.join(subset_p, f), lab_f, f"d3_{new_fid}")
+                cnt += 1
+    print("d3:", cnt)
+
+
+    print("4 kits19")
+    data_p = osp.join(args.data_path, "dataset4_kits19")
+    label_p = osp.join(args.data_path, "dataset4_mask_mappingback")
+    cnt = 0
+    for fid in os.listdir(data_p):
+        # case_00014/imaging.nii.gz, dataset4_case_00014_mask_4label.nii.gz
+        img_f = osp.join(data_p, fid, "imaging.nii.gz")
+        assert osp.isfile(img_f), img_f
+        lab_f = osp.join(label_p, f"dataset4_{fid}_mask_4label.nii.gz")
+        if osp.isfile(lab_f):
+            print(fid, end='\r')
+            new_fid = fid[len("case_"):]
+            proc_volume(SAVE_NII_P, img_f, lab_f, f"d4_{new_fid}")
+            cnt += 1
+    print("d4:", cnt)
+
+
+    print("5 cervix")
+    data_p = osp.join(args.data_path, "dataset5_cervix/RawData")
+    label_p = osp.join(args.data_path, "dataset5_mask_mappingback")
+    cnt = 0
+    for subset in os.listdir(data_p):
+        print('\t', subset)
+        subset_p = osp.join(data_p, subset, "img")
+        for f in os.listdir(subset_p):
+            # 0507688-Image.nii.gz, dataset5_0507688_Image_mask_4label.nii.gz
+            fid = f[:-len(".nii.gz")].replace('-', '_')
+            lab_f = osp.join(label_p, f"dataset5_{fid}_mask_4label.nii.gz")
+            if osp.isfile(lab_f):
+                print(f, end='\r')
+                new_fid = fid[:-len("_Image")]
+                proc_volume(SAVE_NII_P, osp.join(subset_p, f), lab_f, f"d5_{new_fid}")
+                cnt += 1
+    print("d5:", cnt)
+
+
+    print("6 clinic")
+    data_p = osp.join(args.data_path, "dataset6_clinic")
+    label_p = osp.join(args.data_path, "dataset6_mask_mappingback")
+    cnt = 0
+    for f in os.listdir(data_p):
+        # dataset6_CLINIC_0001_data.nii.gz, dataset6_CLINIC_0001_mask_4label.nii.gz
+        fid = f[:-len("_data.nii.gz")]
+        lab_f = osp.join(label_p, f"{fid}_mask_4label.nii.gz")
         if osp.isfile(lab_f):
             print(f, end='\r')
-            proc_volume(osp.join(subset_p, f), lab_f, f"d1_{fid}")
+            try:
+                new_fid = fid[len("dataset6_CLINIC_"):]
+                proc_volume(SAVE_NII_P, osp.join(data_p, f), lab_f, f"d6_{new_fid}")
+            except itk.support.extras.TemplateTypeError:
+                # TemplateTypeError: itk.OrientImageFilter is not wrapped for input type `None`.
+                err_log["itk.support.extras.TemplateTypeError"].append(osp.join(data_p, f))
             cnt += 1
-print("d1:", cnt)
+    print("d6:", cnt)
 
 
-print("2 colonog (NOT DOWNLOAD YET)")
-
-
-print("3 MSD-T10")
-data_p = osp.join(P, "dataset3_msd-t10")
-label_p = osp.join(P, "dataset3_mask_mappingback")
-cnt = 0
-for subset in ("imagesTr", "imagesTs"):
-    print('\t', subset)
-    subset_p = osp.join(data_p, subset)
-    for f in os.listdir(subset_p):
-        # colon_001.nii.gz, dataset3_colon_001_mask_4label.nii.gz
-        fid = f[:-7]
-        lab_f = osp.join(label_p, f"dataset3_{fid}_mask_4label.nii.gz")
+    print("7 clinic metal")
+    data_p = osp.join(args.data_path, "dataset7_clinic_metal")
+    label_p = osp.join(args.data_path, "dataset7_mask_mappingback")
+    cnt = 0
+    for f in os.listdir(data_p):
+        # dataset7_CLINIC_metal_0000_data.nii.gz, CLINIC_metal_0000_mask_4label.nii.gz
+        fid = f[len("dataset7_"): -len("_data.nii.gz")]
+        lab_f = osp.join(label_p, f"{fid}_mask_4label.nii.gz")
         if osp.isfile(lab_f):
             print(f, end='\r')
-            proc_volume(osp.join(subset_p, f), lab_f, f"d3_{fid}")
+            try:
+                new_fid = fid[len("CLINIC_metal_")]
+                proc_volume(SAVE_NII_P, osp.join(data_p, f), lab_f, f"d7_{new_fid}")
+            except itk.support.extras.TemplateTypeError:
+                # TemplateTypeError: itk.OrientImageFilter is not wrapped for input type `None`.
+                err_log["itk.support.extras.TemplateTypeError"].append(osp.join(data_p, f))
             cnt += 1
-print("d3:", cnt)
+    print("d7:", cnt)
 
 
-print("4 kits19")
-data_p = osp.join(P, "dataset4_kits19")
-label_p = osp.join(P, "dataset4_mask_mappingback")
-cnt = 0
-for fid in os.listdir(data_p):
-    # case_00014/imaging.nii.gz, dataset4_case_00014_mask_4label.nii.gz
-    img_f = osp.join(data_p, fid, "imaging.nii.gz")
-    assert osp.isfile(img_f), img_f
-    lab_f = osp.join(label_p, f"dataset4_{fid}_mask_4label.nii.gz")
-    if osp.isfile(lab_f):
-        print(fid, end='\r')
-        proc_volume(img_f, lab_f, f"d4_{fid}")
-        cnt += 1
-print("d4:", cnt)
+    print("\terror log")
+    pprint.pprint(err_log)
+    with open("error-log.json", "w") as f:
+        json.dump(err_log, f, indent=2)
 
 
-print("5 cervix")
-data_p = osp.join(P, "dataset5_cervix/RawData")
-label_p = osp.join(P, "dataset5_mask_mappingback")
-cnt = 0
-for subset in os.listdir(data_p):
-    print('\t', subset)
-    subset_p = osp.join(data_p, subset, "img")
-    for f in os.listdir(subset_p):
-        # 0507688-Image.nii.gz, dataset5_0507688_Image_mask_4label.nii.gz
-        fid = f[:-7].replace('-', '_')
-        lab_f = osp.join(label_p, f"dataset5_{fid}_mask_4label.nii.gz")
-        if osp.isfile(lab_f):
-            print(f, end='\r')
-            proc_volume(osp.join(subset_p, f), lab_f, f"d5_{fid}")
-            cnt += 1
-print("d5:", cnt)
+def ts_infer(args):
+    """segment with pretrained TotalSegmentator for missing bones (e.g. spine)"""
+    src_path = os.path.join(args.data_path, "reorient_LPS")
+    assert os.path.isdir(src_path), "Path to reoriented data does not exist: {}".format(src_path)
+
+    save_path = os.path.join(args.data_path, "ts_pred")
+    os.makedirs(save_path, exist_ok=True)
+    for f in glob.iglob(os.path.join(src_path, "*_image.nii.gz")):
+        vid = os.path.basename(f)[: -len("_image.nii.gz")]
+        predict(f, vid, save_path)
+        print(vid, end='\r')
 
 
-print("6 clinic")
-data_p = osp.join(P, "dataset6_clinic")
-label_p = osp.join(P, "dataset6_mask_mappingback")
-cnt = 0
-for f in os.listdir(data_p):
-    # dataset6_CLINIC_0001_data.nii.gz, dataset6_CLINIC_0001_mask_4label.nii.gz
-    fid = f[:-12]
-    lab_f = osp.join(label_p, f"{fid}_mask_4label.nii.gz")
-    if osp.isfile(lab_f):
-        print(f, end='\r')
-        try:
-            fid = fid[9:] # rm prefix `dataset6_`
-            proc_volume(osp.join(data_p, f), lab_f, f"d6_{fid}")
-        except itk.support.extras.TemplateTypeError:
-            # TemplateTypeError: itk.OrientImageFilter is not wrapped for input type `None`.
-            err_log["itk.support.extras.TemplateTypeError"].append(osp.join(data_p, f))
-        cnt += 1
-print("d6:", cnt)
+def slice_data(args):
+    """slice along the IS axis"""
+    src_path = os.path.join(args.data_path, "reorient_LPS")
+    assert os.path.isdir(src_path), "Path to reoriented data does not exist: {}".format(src_path)
+
+    ts_pred_path = os.path.join(args.data_path, "ts_pred")
+    assert os.path.isdir(ts_pred_path), "TotalSegmentator predictions do not exist: {}".format(ts_pred_path)
+
+    save_path = os.path.join(args.data_path, "slice_is")
+
+    for f in glob.iglob(os.path.join(src_path, "*_image.nii.gz")):
+        vid = os.path.basename(f)[: -len("_image.nii.gz")]
+        save_dir = os.path.join(save_path, vid)
+        if os.path.isdir(save_dir):
+            continue
+
+        image = sitk.ReadImage(f)
+        label = sitk.ReadImage(os.path.join(src_path, "{}_label.nii.gz").format(vid))
+        # axis order changes from LPS to SLP (or SPL?) when converting to numpy
+        p_ab = sitk.ReadImage(os.path.join(ts_pred_path, "{}-appendicular_bones.nii.gz".format(vid)))
+        p_tt = sitk.ReadImage(os.path.join(ts_pred_path, "{}-total.nii.gz".format(vid)))
+        p_vb = sitk.ReadImage(os.path.join(ts_pred_path, "{}-vertebrae_body.nii.gz".format(vid)))
+
+        image_np = sitk.GetArrayFromImage(image)
+        label_np = sitk.GetArrayFromImage(label)
+        p_ab = sitk.GetArrayFromImage(p_ab)
+        p_tt = sitk.GetArrayFromImage(p_tt)
+        p_vb = sitk.GetArrayFromImage(p_vb)
+        assert image_np.shape == label_np.shape == p_ab.shape == p_tt.shape == p_vb.shape
+        # print(image.shape)
+
+        tmp_dir = save_dir + ".tmp"
+        os.makedirs(tmp_dir, exist_ok=True)
+        for i in range(image_np.shape[0]):
+            np.savez_compressed(
+                os.path.join(tmp_dir, str(i)),
+                spacing=image.GetSpacing(),
+                image=image_np[i],
+                label=label_np[i],
+                appendicular_bones=p_ab[i],
+                total=p_tt[i],
+                vertebrae_body=p_vb[i],
+            )
+
+        os.rename(tmp_dir, save_dir)
+        print(vid, end='\r')
 
 
-print("7 clinic metal")
-data_p = osp.join(P, "dataset7_clinic_metal")
-label_p = osp.join(P, "dataset7_mask_mappingback")
-cnt = 0
-for f in os.listdir(data_p):
-    # dataset7_CLINIC_metal_0000_data.nii.gz, CLINIC_metal_0000_mask_4label.nii.gz
-    fid = f[9:-12]
-    lab_f = osp.join(label_p, f"{fid}_mask_4label.nii.gz")
-    if osp.isfile(lab_f):
-        print(f, end='\r')
-        try:
-            proc_volume(osp.join(data_p, f), lab_f, f"d7_{fid}")
-        except itk.support.extras.TemplateTypeError:
-            # TemplateTypeError: itk.OrientImageFilter is not wrapped for input type `None`.
-            err_log["itk.support.extras.TemplateTypeError"].append(osp.join(data_p, f))
-        cnt += 1
-print("d7:", cnt)
+if "__main__" == __name__:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data_path', type=str, default="~/sd10t/ctpelvic1k")
+    args = parser.parse_args()
 
+    args.data_path = osp.expanduser(args.data_path)
+    assert os.path.isdir(args.data_path), args.data_path
 
-print("\terror log")
-pprint.pprint(err_log)
-with open("error-log.json", "w") as f:
-    json.dump(err_log, f, indent=2)
+    reorient_data(args)
+    ts_infer(args)
+    slice_data(args)
