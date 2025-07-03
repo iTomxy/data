@@ -44,9 +44,9 @@ def is_bone(pred_np):
 #     # assert label.shape == isb_nib.shape, f"label: {label_nib.shape}, re-read: {isb_nib.shape}"
 
 
-def predict(image_nii_f, vid, save_dir):
+def predict(image_nii_f, vid, save_dir, subtasks=("total", "appendicular_bones", "vertebrae_body")):
     """predict with pretrained model of several bone-related subtasks, and save"""
-    for subtask in ("total", "appendicular_bones", "vertebrae_body"):
+    for subtask in subtasks:
         save_f = os.path.join(save_dir, f"{vid}-{subtask}.nii.gz")
         if not os.path.isfile(save_f):
             with tempfile.TemporaryDirectory() as temp_dir:

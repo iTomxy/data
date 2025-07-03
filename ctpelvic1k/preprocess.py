@@ -234,7 +234,7 @@ def ts_infer(args):
     os.makedirs(save_path, exist_ok=True)
     for f in glob.iglob(os.path.join(src_path, "*_image.nii.gz")):
         vid = os.path.basename(f)[: -len("_image.nii.gz")]
-        predict(f, vid, save_path)
+        predict(f, vid, save_path, subtasks=args.ts_tasks)
         print(vid, end='\r')
 
 
@@ -257,29 +257,33 @@ def slice_data(args):
         image = sitk.ReadImage(f)
         label = sitk.ReadImage(os.path.join(src_path, "{}_label.nii.gz").format(vid))
         # axis order changes from LPS to SLP (or SPL?) when converting to numpy
-        p_ab = sitk.ReadImage(os.path.join(ts_pred_path, "{}-appendicular_bones.nii.gz".format(vid)))
-        p_tt = sitk.ReadImage(os.path.join(ts_pred_path, "{}-total.nii.gz".format(vid)))
-        p_vb = sitk.ReadImage(os.path.join(ts_pred_path, "{}-vertebrae_body.nii.gz".format(vid)))
+        ts_preds = {
+            t: sitk.ReadImage(os.path.join(ts_pred_path, "{}-{}.nii.gz".format(vid, t)))
+            for t in args.ts_tasks
+        }
 
         image_np = sitk.GetArrayFromImage(image)
         label_np = sitk.GetArrayFromImage(label)
-        p_ab = sitk.GetArrayFromImage(p_ab)
-        p_tt = sitk.GetArrayFromImage(p_tt)
-        p_vb = sitk.GetArrayFromImage(p_vb)
-        assert image_np.shape == label_np.shape == p_ab.shape == p_tt.shape == p_vb.shape
+        ts_preds = {k: sitk.GetArrayFromImage(v) for k, v in ts_preds.items()}
+        assert image_np.shape == label_np.shape
+        for k, v in ts_preds.items():
+            assert image_np.shape == v.shape, "Shape mismatch: image ({}) vs. {} ({})".format(
+                image_np.shape, k, v.shape)
         # print(image.shape)
 
         tmp_dir = save_dir + ".tmp"
         os.makedirs(tmp_dir, exist_ok=True)
         for i in range(image_np.shape[0]):
-            np.savez_compressed(
-                os.path.join(tmp_dir, str(i)),
+            _dict = dict(
                 spacing=image.GetSpacing(),
                 image=image_np[i],
-                label=label_np[i],
-                appendicular_bones=p_ab[i],
-                total=p_tt[i],
-                vertebrae_body=p_vb[i],
+                label=label_np[i]
+            )
+            for k, v in ts_preds.items():
+                _dict[k] = v[i]
+            np.savez_compressed(
+                os.path.join(tmp_dir, str(i)),
+                **_dict
             )
 
         os.rename(tmp_dir, save_dir)
@@ -288,7 +292,10 @@ def slice_data(args):
 
 if "__main__" == __name__:
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_path', type=str, default="~/sd10t/ctpelvic1k")
+    parser.add_argument('-d', '--data-path', type=str, default="~/sd10t/ctpelvic1k")
+    parser.add_argument('-t', '--ts-tasks', type=str, nargs='+', default=["total"],
+        choices=["total", "appendicular_bones", "vertebrae_body"],
+        help="do what types of TotalSegmentator prediction.")
     args = parser.parse_args()
 
     args.data_path = osp.expanduser(args.data_path)

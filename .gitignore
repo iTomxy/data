@@ -160,6 +160,8 @@ cython_debug/
 *.svg
 *.webm
 .DS_Store
+*.nii
+*.mha
 
 # zipped file
 *.zip
@@ -201,6 +203,7 @@ events.out.tfevents.*
 
 # pytorch
 *.pth
+*.pt
 
 # latex
 *.aux
