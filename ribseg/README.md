@@ -27,6 +27,13 @@ Follow "[RibSeg v2 dataset, description document, and annotations as mesh here.]
 in the ribsegv2 branch readme:
 download [ribseg_v2.zip](https://drive.google.com/file/d/1ZZGGrhd0y1fLyOZGo_Y-wlVUP4lkHVgm/view).
 
+Wrong Label (23 Apr 2026):
+- volumes: `344, 439, 462, 471, 487, 540, 652`
+- error types: some are wrong indexing; some contain unlabeled ribs, and labeled ones are indexed wrong.
+- checking method:
+   1. coarse auto-detecting with [detect_wrong_label.py](detect_wrong_label.py) against the pretrained TotalSegmentator prediction.
+   2. manual visual check of label volume against a reference volume (vol. 1) + CT scan visualisation.
+
 # Gather v2 Data
 
 This section gathers CT scans and segmentation labels of v2 data into a unified folder respectively for convenient data loading.

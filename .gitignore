@@ -79,7 +79,8 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
-*.ipynb
+# *.ipynb
+.virtual_documents
 
 # IPython
 profile_default/
@@ -144,24 +145,52 @@ cython_debug/
 .vscode
 .idea
 
-# data
+# AI
+.codex
+.claude
+
+# system
 *.exe
-*.gif
-*.h5
-*.jpeg
-*.jpg
 *.lnk
+.DS_Store
+
+# data
+*.h5
+*.hdf5
 *.mat
 *.np[yz]
 *.obj
 *.pkl
 *.pickle
+
+# media
+*.3gp
+*.asf
+*.avi
+*.flv
+*.gif
+*.jpeg
+*.jpg
+*.m[4ko]v
+*.mp[34]
+*.ogv
 *.png
 *.svg
-*.webm
-.DS_Store
+*.tif
+*.tiff
+*.ts
+*.vob
+*.web[mp]
+*.wmv
+
+# medical image
 *.nii
 *.mha
+*.dcm
+*.dicom
+*.mnc
+*.img
+*.hdr
 
 # zipped file
 *.zip
@@ -196,20 +225,60 @@ cython_debug/
 ~$*.xls
 ~$*.xlsx
 
-
 # tensorflow
 events.out.tfevents.*
 *.tfrecords
 
 # pytorch
-*.pth
 *.pt
+*.pth
+
+# torch
+*.t7
 
 # latex
+*.ac[nr]
+*.alg
 *.aux
 *.bbl
+*.bcf
+*.bit
 *.blg
+*.brf
+*.cb
+*.cb2
+*.dvi
+*.fdb_latexmk
+*.fff
+*.fls
+*.f[mo]t
+*.gl[gosx]
+*.gx[gs]
+*.idx
+*.ilg
+*.ind
+*.ist
+*.lb
+*.lo[fgt]
+*.maf
+*.mp
+*.mtc
+*.mtcl
+*.nav
+*.nlo
 *.out
+*.run.xml
+*.snm
+*.spl
+*.st[ap]
+*.sv[ntx]
+*.synctex.gz
+*.toc
+*.url
+*.vrb
+
+# git
+*.bundle
 
 # for this repo
 \?/
@@ -218,3 +287,5 @@ fake-jpg.txt
 coco/input*.txt
 coco/*.txt.conll
 ctpelvic1k/error-log.json
+ribseg/log
+ribseg/totalseg_pred
