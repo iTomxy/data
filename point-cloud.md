@@ -67,7 +67,30 @@ Ojbect shape.
 
 1513 indoor scenes.
 
-# KITTI
+Each object is split into multiple segments,
+each with a segment ID (`segIndices`).
+`segGroups` of an object tells it is composited by which segIndices.
+
+# vKITTI
 
 Virtual KITTI 3D dataset.
 Ourdoor scenes.
+
+- paper: Exploring Spatial Context for 3D Semantic Segmentation of Point Clouds - [arXiv](https://arxiv.org/abs/1802.01500)
+
+# SemanticKITTI
+
+Outdoor scenes.
+
+- paper: SemanticKITTI: A Dataset for Semantic Scene Understanding
+of LiDAR Sequences - [arXiv](https://arxiv.org/abs/1904.01416)
+- project: [SemanticKITTI](https://semantic-kitti.org/)
+
+# Semantic3D
+
+Outdoor scenes.
+15 point clouds for training and 15 for testing,
+each with up to $10^8$ points,
+covering up to $160 \times 240 \times 30\ m^3$.
+
+- project: [Large-Scale Point Cloud Classification Benchmark](https://www.semantic3d.net/)
