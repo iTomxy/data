@@ -21,7 +21,7 @@ if "__main__" == __name__: # must, to avoid multiprocessing error
     P = os.path.expanduser("~/codes/tmp.ptcloud/data/ribsegv2/image")
     save_dir = os.path.expanduser("~/data/ribseg/totalseg_pred/raw")
     os.makedirs(save_dir, exist_ok=True)
-    vids = [501, 507, 570, 589, 630, 653] # heavily noisy vols
+    # vids = [501, 507, 570, 589, 630, 653] # heavily noisy vols
     subtask = "total"
     for vid in range(1, 660):
         if os.path.isfile(os.path.join(P, "RibFrac{}-image.nii.gz".format(vid))):

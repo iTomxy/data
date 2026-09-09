@@ -34,6 +34,13 @@ Wrong Label (23 Apr 2026):
    1. coarse auto-detecting with [detect_wrong_label.py](detect_wrong_label.py) against the pretrained TotalSegmentator prediction.
    2. manual visual check of label volume against a reference volume (vol. 1) + CT scan visualisation.
 
+## corrected binary (v1) annotations
+
+Provided by [3], including:
+- some manually corrected training set volumes;
+- whole training set (vol. 1 - 420) prediction using the nnUNet trained with corrected annotations;
+- weights of the trained nnUNet.
+
 # Gather v2 Data
 
 This section gathers CT scans and segmentation labels of v2 data into a unified folder respectively for convenient data loading.
@@ -77,3 +84,5 @@ As a preprocessing,
 Baselines for Rib Segmentation from CT Scans - [arXiv](https://arxiv.org/abs/2109.09521), [code](https://github.com/M3DV/RibSeg/tree/ribsegv1)
 
 2. (TMI'23) RibSeg v2: A Large-scale Benchmark for Rib Labeling and Anatomical Centerline Extraction - [arXiv](https://arxiv.org/abs/2210.09309), [code](https://github.com/M3DV/RibSeg/tree/ribsegv2)
+
+3. Automated Thoracolumbar Stump Rib Detection and Analysis in a Large CT Cohort - [arXiv](https://arxiv.org/abs/2505.05004), [code](https://github.com/Hendrik-code/rib-segmentation), [data & model weights](https://zenodo.org/records/14864106)
